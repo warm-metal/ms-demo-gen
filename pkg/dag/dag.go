@@ -15,9 +15,9 @@ type Options struct {
 }
 
 type Service struct {
-	id int64
+	id        int64
 	outDegree int
-	depth int
+	depth     int
 }
 
 func (s *Service) ID() int64 {
@@ -49,6 +49,10 @@ func calcVerticesHaveOutDegrees(vertices []*Service, upperBoundOutDegree, maxDep
 }
 
 func selectVerticesRandomly(vertices []*Service, numTargts int) []*Service {
+	if numTargts == 0 {
+		panic("invalid in degree 0")
+	}
+
 	targets := make([]*Service, numTargts)
 	for i := 0; i < numTargts; i++ {
 		index := rand.Intn(len(vertices))
@@ -70,14 +74,14 @@ func New(opts *Options) graph.Graph {
 			continue
 		}
 
-		availableVertices := calcVerticesHaveOutDegrees(vertices[:i], opts.OutDegreeRange[0], opts.LongestWalk)
+		availableVertices := calcVerticesHaveOutDegrees(vertices[:i-1], opts.OutDegreeRange[1], opts.LongestWalk)
 		// FIXME remove redundant walk paths.
 		if len(availableVertices) == 0 {
 			panic("all vertices have no more out degrees")
 		}
 
 		upperBoundInDegree := opts.InDegreeRange[1]
-		if upperBoundInDegree > len(availableVertices) {
+		if len(availableVertices) < upperBoundInDegree {
 			upperBoundInDegree = len(availableVertices)
 		}
 
@@ -85,10 +89,20 @@ func New(opts *Options) graph.Graph {
 			panic("upperBoundInDegree is lower than the lower bound")
 		}
 
-		inDegree := rand.Intn(upperBoundInDegree-opts.InDegreeRange[0])+opts.InDegreeRange[0]
+		inDegree := 0
+		if upperBoundInDegree == opts.InDegreeRange[0] {
+			inDegree = upperBoundInDegree
+		} else {
+			inDegree = rand.Intn(upperBoundInDegree-opts.InDegreeRange[0]) + opts.InDegreeRange[0]
+		}
+		
 		fromVertices := selectVerticesRandomly(availableVertices, inDegree)
+		if len(fromVertices) == 0 {
+			panic(`no source vertex found for target vertex`)
+		}
 		for _, v := range fromVertices {
-			depth := v.depth+1
+			v.outDegree += 1
+			depth := v.depth + 1
 			if depth > vertex.depth {
 				vertex.depth = depth
 			}

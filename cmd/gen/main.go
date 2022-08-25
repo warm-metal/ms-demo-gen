@@ -18,6 +18,7 @@ var (
 )
 
 func main() {
+	flag.Parse()
 	g := dag.New(&dag.Options{
 		NumberVertices: *numServices,
 		InDegreeRange:  [2]int{1, *maxCaller},
