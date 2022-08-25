@@ -65,6 +65,11 @@ func New(opts *Options) graph.Graph {
 	for i := 1; i <= opts.NumberVertices; i++ {
 		vertex := &Service{id: int64(i)}
 		vertices[i-1] = vertex
+		if vertex.IsRoot() {
+			g.AddNode(vertex)
+			continue
+		}
+
 		availableVertices := calcVerticesHaveOutDegrees(vertices[:i], opts.OutDegreeRange[0], opts.LongestWalk)
 		// FIXME remove redundant walk paths.
 		if len(availableVertices) == 0 {
