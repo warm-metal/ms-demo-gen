@@ -4,6 +4,7 @@ import (
 	"math/rand"
 
 	"gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/encoding"
 	"gonum.org/v1/gonum/graph/simple"
 )
 
@@ -26,6 +27,19 @@ func (s *Service) ID() int64 {
 
 func (s *Service) IsRoot() bool {
 	return s.id == 1
+}
+
+func (s *Service) DOTAttributers() (graph, node, edge encoding.Attributer) {
+	return nil, &encoding.Attributes{
+		{
+			Key: "svc",
+			Value: "a",
+		},
+		{
+			Key: "svc",
+			Value: "b",
+		},
+	}, nil
 }
 
 func calcVerticesHaveOutDegrees(vertices []*Service, upperBoundOutDegree, maxDepth int) []*Service {

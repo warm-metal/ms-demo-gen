@@ -1,2 +1,4 @@
+github.com/xyproto/randomstring v0.0.0-20220311122621-4964ec363205 h1:iLAD+1IKR/Syrsnn0NzIvvggWD4gNbW3vdQIpHKbXUQ=
+github.com/xyproto/randomstring v0.0.0-20220311122621-4964ec363205/go.mod h1:rgmS5DeNXLivK7YprL0pY+lTuhNQW3iGxZ18UQApw/E=
 gonum.org/v1/gonum v0.11.0 h1:f1IJhK4Km5tBJmaiJXtk/PkL4cdVX6J+tGiM187uT5E=
 gonum.org/v1/gonum v0.11.0/go.mod h1:fSG4YDCxxUZQJ7rKsQrj0gMOg00Il0Z96/qMA4bVQhA=
