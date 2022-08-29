@@ -6,6 +6,9 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
+
+	rands "github.com/xyproto/randomstring"
 )
 
 type SignBit int
@@ -39,7 +42,7 @@ func buildPayloadSizePlan(payloadSizePlan []int) {
 		for j := focusedPos[counterSign]; j < i; j++ {
 			focusedSign := GetSignBit(payloadSizePlan[j])
 			if payloadSizePlan[j] == 0 || sign == focusedSign {
-				focusedPos[counterSign]+=1
+				focusedPos[counterSign] += 1
 				continue
 			}
 
@@ -51,7 +54,7 @@ func buildPayloadSizePlan(payloadSizePlan []int) {
 
 			payloadSizePlan[i] = payloadSizePlan[j]
 			payloadSizePlan[j] = 0
-			focusedPos[counterSign]+=1
+			focusedPos[counterSign] += 1
 		}
 	}
 }
@@ -68,9 +71,10 @@ type RemoteClient struct {
 	upstream       []string
 	inParallel     bool
 	longConnection bool
+	timeout        time.Duration
 }
 
-func (c *RemoteClient) Query(maxPayloadSize int) (resp string) {
+func (c *RemoteClient) Query(uploadSize, maxPayloadSize int) (resp string) {
 	if len(c.upstream) == 0 {
 		return
 	}
@@ -79,9 +83,9 @@ func (c *RemoteClient) Query(maxPayloadSize int) (resp string) {
 	for i, up := range c.upstream {
 		waitingList[i] = make(chan string, 1)
 		if c.inParallel {
-			go c.asyncQuery(up, waitingList[i])
+			go c.asyncQuery(uploadSize, up, waitingList[i])
 		} else {
-			waitingList[i] <- c.syncQuery(up)
+			waitingList[i] <- c.syncQuery(uploadSize, up)
 		}
 	}
 
@@ -110,22 +114,33 @@ func (c *RemoteClient) Query(maxPayloadSize int) (resp string) {
 }
 
 func (c *RemoteClient) genClient(upstream string) *http.Client {
-	return http.DefaultClient
+	return &http.Client{
+		Timeout: c.timeout,
+		Transport: &http.Transport{
+			DisableKeepAlives: !c.longConnection,
+		},
+	}
 }
 
-func (c *RemoteClient) syncQuery(upstream string) string {
+func (c *RemoteClient) syncQuery(uploadSize int, upstream string) string {
 	client := c.genClient(upstream)
-	resp, err := client.Get("http://"+upstream)
+	url := "http://" + upstream
+	var err error
+	var resp *http.Response
+	if uploadSize > 0 {
+		resp, err = client.Post(url, "text/plain", strings.NewReader(rands.HumanFriendlyEnglishString(uploadSize)))
+	} else {
+		resp, err = client.Get(url)
+	}
+
 	if err != nil {
 		return fmt.Sprintf("Error: %s", err)
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Sprintf("Error: %s", resp.Status)
-	}
-
-	if c.longConnection {
-		defer resp.Body.Close()
 	}
 
 	b := &strings.Builder{}
@@ -133,8 +148,8 @@ func (c *RemoteClient) syncQuery(upstream string) string {
 	return b.String()
 }
 
-func (c *RemoteClient) asyncQuery(upstream string, out chan string) {
+func (c *RemoteClient) asyncQuery(uploadSize int, upstream string, out chan string) {
 	defer close(out)
-	resp := c.syncQuery(upstream)
+	resp := c.syncQuery(uploadSize, upstream)
 	out <- resp
 }

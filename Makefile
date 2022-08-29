@@ -5,3 +5,6 @@ default:
 
 test:
 	go test ./...
+
+image:
+	docker build -f service.dockerfile -t docker.io/warmmetal/ms-demo-service:v1 .
