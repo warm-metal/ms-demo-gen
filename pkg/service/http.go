@@ -11,6 +11,10 @@ type Options struct {
 	Upstream        []string
 	QueryInParallel bool
 	LongConn        bool
+
+	// FIXME
+	Timeout int
+	UploadSize int
 }
 
 func CreateServer(opts *Options) *HttpServer {

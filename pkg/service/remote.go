@@ -1,9 +1,60 @@
 package service
 
 import (
+	"fmt"
+	"io"
+	"math"
 	"net/http"
 	"strings"
 )
+
+type SignBit int
+
+func (b SignBit) Counter() SignBit {
+	return 1 - b
+}
+
+const (
+	SignBitPositive = SignBit(iota)
+	SignBitNegative
+)
+
+func GetSignBit(i int) SignBit {
+	if math.Signbit(float64(i)) {
+		return SignBitNegative
+	}
+
+	return SignBitPositive
+}
+
+func buildPayloadSizePlan(payloadSizePlan []int) {
+	focusedPos := [2]int{0, 0}
+	for i, p := range payloadSizePlan {
+		if p == 0 {
+			continue
+		}
+
+		sign := GetSignBit(p)
+		counterSign := sign.Counter()
+		for j := focusedPos[counterSign]; j < i; j++ {
+			focusedSign := GetSignBit(payloadSizePlan[j])
+			if payloadSizePlan[j] == 0 || sign == focusedSign {
+				focusedPos[counterSign]+=1
+				continue
+			}
+
+			payloadSizePlan[j] += payloadSizePlan[i]
+			payloadSizePlan[i] = 0
+			if focusedSign == GetSignBit(payloadSizePlan[j]) {
+				break
+			}
+
+			payloadSizePlan[i] = payloadSizePlan[j]
+			payloadSizePlan[j] = 0
+			focusedPos[counterSign]+=1
+		}
+	}
+}
 
 func fillStringBuilderOrDie(b *strings.Builder, vs ...string) {
 	for _, v := range vs {
@@ -43,58 +94,7 @@ func (c *RemoteClient) Query(maxPayloadSize int) (resp string) {
 		payloadSizePlan[i] = len(resps[i]) + len(c.upstream[i]) + 1 - maxPayloadSizePerUpstream
 	}
 
-	
-
-	// delta in plans > 0
-	firstOversizedPos := 0
-	// delta in plans < 0
-	firstUndersizedPos := 0
-	for i, p := range payloadSizePlan {
-		if p == 0 {
-			continue
-		}
-
-
-
-		if p < 0 {
-			// find an oversized position from the begining then balance it
-			for j := firstOversizedPos; j < i; j++ {
-				if payloadSizePlan[j] <= 0 {
-					firstOversizedPos++
-					continue
-				}
-
-				payloadSizePlan[j] += payloadSizePlan[i]
-				payloadSizePlan[i] = 0
-				if payloadSizePlan[j] >= 0 {
-					break
-				}
-
-				payloadSizePlan[i] = -payloadSizePlan[j]
-				payloadSizePlan[j] = 0
-				firstOversizedPos++
-			}
-			continue
-		}
-
-		// if p > 0, then find an undersized position from the beginning
-		for j := firstUndersizedPos; j < i; j++ {
-			if payloadSizePlan[j] > 0 {
-				firstUndersizedPos++
-				continue
-			}
-
-			payloadSizePlan[j] += payloadSizePlan[i]
-			payloadSizePlan[i] = 0
-			if payloadSizePlan[j] <= 0 {
-				break
-			}
-
-			payloadSizePlan[i] = -payloadSizePlan[j]
-			payloadSizePlan[j] = 0
-			firstUndersizedPos++
-		}
-	}
+	buildPayloadSizePlan(payloadSizePlan)
 
 	b := strings.Builder{}
 	b.Grow(maxPayloadSize)
@@ -110,11 +110,27 @@ func (c *RemoteClient) Query(maxPayloadSize int) (resp string) {
 }
 
 func (c *RemoteClient) genClient(upstream string) *http.Client {
-	return nil
+	return http.DefaultClient
 }
 
 func (c *RemoteClient) syncQuery(upstream string) string {
-	return ""
+	client := c.genClient(upstream)
+	resp, err := client.Get("http://"+upstream)
+	if err != nil {
+		return fmt.Sprintf("Error: %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Sprintf("Error: %s", resp.Status)
+	}
+
+	if c.longConnection {
+		defer resp.Body.Close()
+	}
+
+	b := &strings.Builder{}
+	io.Copy(b, resp.Body)
+	return b.String()
 }
 
 func (c *RemoteClient) asyncQuery(upstream string, out chan string) {
