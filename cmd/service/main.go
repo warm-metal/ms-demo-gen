@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strconv"
 	"strings"
@@ -35,6 +36,10 @@ func main() {
 		QueryInParallel: LookupEnv[int](argsKeyQueryInParallel) > 0,
 		LongConn:        LookupEnv[int](argsKeyLongConnection) > 0,
 		Timeout:         LookupEnv[time.Duration](argsKeyQueryTimeout) * time.Millisecond,
+		Address:         ":80",
 	})
-	s.Loop()
+
+	ctx := context.Background()
+	done := s.LoopInBackground(ctx)
+	<-done
 }
