@@ -16,28 +16,35 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func httpTraffic(t *testing.T, payloadSize int) {
-	payload := func() int {
-		if payloadSize == 0 {
-			return payloadSize
+func httpTraffic(t *testing.T, payloadSize, uploadSize int, queryInParallel bool) {
+	randomSize := func(max int) int {
+		if max == 0 {
+			return max
 		}
 
-		return rand.Intn(payloadSize)
+		return rand.Intn(max)
 	}
+
 	optServer := &Options{
-		Address:     ":8001",
-		PayloadSize: payload(),
+		Address:         ":8001",
+		PayloadSize:     randomSize(payloadSize),
+		UploadSize:      randomSize(uploadSize),
+		QueryInParallel: queryInParallel,
 	}
 
 	optServer2 := &Options{
-		Address:     ":8002",
-		PayloadSize: payload(),
+		Address:         ":8002",
+		PayloadSize:     randomSize(payloadSize),
+		UploadSize:      randomSize(uploadSize),
+		QueryInParallel: queryInParallel,
 	}
 
 	optClient := &Options{
-		Address:     ":8000",
-		Upstream:    []string{optServer.Address, optServer2.Address},
-		PayloadSize: payload(),
+		Address:         ":8000",
+		Upstream:        []string{optServer.Address, optServer2.Address},
+		PayloadSize:     randomSize(payloadSize),
+		UploadSize:      randomSize(uploadSize),
+		QueryInParallel: queryInParallel,
 	}
 
 	client := CreateServer(optClient)
@@ -78,18 +85,20 @@ func httpTraffic(t *testing.T, payloadSize int) {
 		t.FailNow()
 	}
 
-	if optClient.PayloadSize > optServer.PayloadSize + optServer2.PayloadSize && 
+	if optClient.PayloadSize > optServer.PayloadSize+optServer2.PayloadSize &&
 		(!strings.Contains(body.String(), optServer.Address) || !strings.Contains(body.String(), optServer2.Address)) {
-			t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d\n",
+		t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d\n",
 			optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize)
 		t.FailNow()
 	}
 }
 
 func TestHttpTrafficWoPayloads(t *testing.T) {
-	httpTraffic(t, 0)
+	httpTraffic(t, 0, 0, false)
+	httpTraffic(t, 0, 0, true)
 }
 
 func TestHttpTrafficWPayloads(t *testing.T) {
-	httpTraffic(t, 512)
+	httpTraffic(t, 512, 64, false)
+	httpTraffic(t, 512, 64, true)
 }
