@@ -103,10 +103,13 @@ func (c *RemoteClient) Query(uploadSize, maxPayloadSize int) (resp string) {
 	b := strings.Builder{}
 	b.Grow(maxPayloadSize)
 	for i, resp := range resps {
-		fillStringBuilderOrDie(&b, c.upstream[i], ":")
 		if payloadSizePlan[i] > 0 {
-			fillStringBuilderOrDie(&b, resp[:len(resp)-payloadSizePlan[i]])
+			if len(resp) >= payloadSizePlan[i] {
+				fillStringBuilderOrDie(&b, c.upstream[i], ":")
+				fillStringBuilderOrDie(&b, resp[:len(resp)-payloadSizePlan[i]])
+			}
 		} else {
+			fillStringBuilderOrDie(&b, c.upstream[i], ":")
 			fillStringBuilderOrDie(&b, resp)
 		}
 	}
