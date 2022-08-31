@@ -2,9 +2,13 @@ package main
 
 import (
 	"flag"
+	"io"
 	"io/ioutil"
+	"math/rand"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/warm-metal/ms-demo-gen.git/pkg/dag"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/manifest"
@@ -27,6 +31,7 @@ var (
 
 func main() {
 	rands.Seed()
+	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
 	g := dag.New(&dag.Options{
 		NumberVertices: *numServices,
@@ -46,8 +51,19 @@ func main() {
 		}
 	}
 
+	var out io.WriteCloser
+	if len(*outputDir) > 0 {
+		out, err := os.Create(filepath.Join(*outputDir, "manifests.yaml"))
+		if err != nil {
+			panic(err)
+		}
+		defer out.Close()
+	} else {
+		out = os.Stdout
+	}
+
 	manifest.GenForK8s(g, &manifest.Options{
-		OutputDir:          *outputDir,
+		Output:             out,
 		Namespaces:         strings.Split(*targetNamespaces, ","),
 		ReplicaNumberRange: [2]int{1, *maxReplicas},
 		Image:              *image,

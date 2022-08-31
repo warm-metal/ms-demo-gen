@@ -3,8 +3,7 @@ package manifest
 import (
 	"io"
 	"math/rand"
-	"os"
-	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
@@ -22,10 +21,14 @@ type Service struct {
 	Image       string
 }
 
+func (s Service) JoinUpstreams() string {
+	return strings.Join(s.Upstream, ",")
+}
+
 type Options struct {
 	service.Options
 
-	OutputDir          string
+	Output             io.Writer
 	Namespaces         []string
 	ReplicaNumberRange [2]int
 	Image              string
@@ -57,6 +60,7 @@ func (o Options) NumReplicas() int {
 
 func (o Options) NewService() *Service {
 	return &Service{
+		Options:     o.Options,
 		Name:        rands.HumanFriendlyEnglishString(10),
 		Namespace:   o.Namespace(),
 		NumReplicas: o.NumReplicas(),
@@ -85,23 +89,12 @@ func GenForK8s(g graph.Directed, opts *Options) {
 				fromService.Upstream = append(fromService.Upstream, toService.Name)
 			}
 		}
+	}
 
-		t := template.Must(template.New("workload").Parse(workloadTemplate))
-		var out io.WriteCloser
-		if len(opts.OutputDir) > 0 {
-			out, err := os.Create(filepath.Join(opts.OutputDir, "manifests.yaml"))
-			if err != nil {
-				panic(err)
-			}
-			defer out.Close()
-		} else {
-			out = os.Stdout
-		}
-
-		for _, s := range serviceMap {
-			if err := t.Execute(out, s); err != nil {
-				panic(err)
-			}
+	t := template.Must(template.New("workload").Parse(workloadTemplate))
+	for _, s := range serviceMap {
+		if err := t.Execute(opts.Output, s); err != nil {
+			panic(err)
 		}
 	}
 }

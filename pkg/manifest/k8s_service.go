@@ -26,7 +26,7 @@ spec:
 		- name: ENV_UPLOAD_SIZE
 		  value: "{{.UploadSize}}"
 		- name: ENV_UPSTREAM
-		  value: "{{strings.Join .Upstream, ","}}"
+		  value: "{{.JoinUpstreams}}"
 		- name: ENV_QUERY_IN_PARALLEL
 		  value: "{{.QueryInParallel}}"
 		- name: ENV_USE_LONG_CONNECTION
