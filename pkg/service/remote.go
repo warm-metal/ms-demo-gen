@@ -89,19 +89,28 @@ func (c *RemoteClient) Query(uploadSize, maxPayloadSize int) (resp string) {
 		}
 	}
 
-	maxPayloadSizePerUpstream := maxPayloadSize / len(c.upstream)
 	payloadSizePlan := make([]int, len(c.upstream))
 	resps := make([]string, len(c.upstream))
+	maxPayloadSizePerUpstream := maxPayloadSize / len(c.upstream)
 	for i, w := range waitingList {
 		resps[i] = <-w
 		// taking length of the upsteam url into account
-		payloadSizePlan[i] = len(resps[i]) + len(c.upstream[i]) + 1 - maxPayloadSizePerUpstream
+		if maxPayloadSize > 0 {
+			payloadSizePlan[i] = len(resps[i]) + len(c.upstream[i]) + 1 - maxPayloadSizePerUpstream
+		}
+	}
+
+	if maxPayloadSize == 0 {
+		return ""
 	}
 
 	buildPayloadSizePlan(payloadSizePlan)
 
 	b := strings.Builder{}
-	b.Grow(maxPayloadSize)
+	if maxPayloadSize > 0 {
+		b.Grow(maxPayloadSize)
+	}
+
 	for i, resp := range resps {
 		if payloadSizePlan[i] > 0 {
 			if len(resp) >= payloadSizePlan[i] {
@@ -155,4 +164,13 @@ func (c *RemoteClient) asyncQuery(uploadSize int, upstream string, out chan stri
 	defer close(out)
 	resp := c.syncQuery(uploadSize, upstream)
 	out <- resp
+}
+
+func NewClient(opts *Options) *RemoteClient {
+	return &RemoteClient{
+		upstream:       opts.Upstream,
+		inParallel:     opts.QueryInParallel,
+		longConnection: opts.LongConn,
+		timeout:        opts.Timeout,
+	}
 }

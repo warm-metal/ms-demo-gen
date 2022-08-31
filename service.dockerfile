@@ -1,10 +1,15 @@
 FROM golang:1.19.0-alpine3.16 as builder
+RUN apk add --no-cache make build-base
 WORKDIR /go/src/github.com/warm-metal/ms-demo-gen
-COPY cmd/service ./cmd/service/
 COPY pkg ./pkg
+COPY cmd ./cmd
 COPY go.mod go.sum Makefile ./
-RUN go mod tidy && go build -o _output/service ./cmd/service
+RUN go mod tidy && make
 
-FROM alpine:3.16
+FROM alpine:3.16 as service
 COPY --from=builder /go/src/github.com/warm-metal/ms-demo-gen/_output/service /usr/local/bin/
 ENTRYPOINT [ "/usr/local/bin/service" ]
+
+FROM alpine:3.16 as traffic-gen
+COPY --from=builder /go/src/github.com/warm-metal/ms-demo-gen/_output/traffic_gen /usr/local/bin/
+ENTRYPOINT [ "/usr/local/bin/traffic_gen" ]

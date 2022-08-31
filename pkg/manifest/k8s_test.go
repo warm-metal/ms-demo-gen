@@ -10,7 +10,6 @@ import (
 	"github.com/warm-metal/ms-demo-gen.git/pkg/dag"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/manifest"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
-	"gonum.org/v1/gonum/graph/encoding/dot"
 
 	rands "github.com/xyproto/randomstring"
 )
