@@ -32,11 +32,11 @@ func (s *Service) IsRoot() bool {
 func (s *Service) DOTAttributers() (graph, node, edge encoding.Attributer) {
 	return nil, &encoding.Attributes{
 		{
-			Key: "svc",
+			Key:   "svc",
 			Value: "a",
 		},
 		{
-			Key: "svc",
+			Key:   "svc",
 			Value: "b",
 		},
 	}, nil
@@ -77,7 +77,7 @@ func selectVerticesRandomly(vertices []*Service, numTargts int) []*Service {
 	return targets
 }
 
-func New(opts *Options) graph.Graph {
+func New(opts *Options) graph.Directed {
 	g := simple.NewDirectedGraph()
 	vertices := make([]*Service, opts.NumberVertices)
 	for i := 1; i <= opts.NumberVertices; i++ {
@@ -109,7 +109,7 @@ func New(opts *Options) graph.Graph {
 		} else {
 			inDegree = rand.Intn(upperBoundInDegree-opts.InDegreeRange[0]) + opts.InDegreeRange[0]
 		}
-		
+
 		fromVertices := selectVerticesRandomly(availableVertices, inDegree)
 		if len(fromVertices) == 0 {
 			panic(`no source vertex found for target vertex`)

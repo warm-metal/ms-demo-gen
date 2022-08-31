@@ -7,4 +7,4 @@ test:
 	go test -v -count=1 ./...
 
 image:
-	docker build -f service.dockerfile -t docker.io/warmmetal/ms-demo-service:v1 .
+	docker build -f service.dockerfile -t docker.io/warmmetal/ms-demo-service:v0.1.0 .
