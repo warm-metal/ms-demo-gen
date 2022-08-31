@@ -10,6 +10,7 @@ import (
 	"github.com/warm-metal/ms-demo-gen.git/pkg/dag"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/manifest"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
+	"gonum.org/v1/gonum/graph/encoding/dot"
 
 	rands "github.com/xyproto/randomstring"
 )
@@ -29,7 +30,6 @@ func TestManifestGeneration(t *testing.T) {
 	}
 
 	g := dag.New(dagOpts)
-
 	s := &strings.Builder{}
 	manifestOpts := &manifest.Options{
 		Options: service.Options{

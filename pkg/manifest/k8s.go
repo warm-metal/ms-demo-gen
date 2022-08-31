@@ -77,22 +77,26 @@ func GenForK8s(g graph.Directed, opts *Options) {
 		if fromService == nil {
 			fromService = opts.NewService()
 			serviceMap[from.ID()] = fromService
+		}
 
-			targets := g.From(from.ID())
-			for targets.Next() {
-				to := targets.Node()
-				toService := serviceMap[to.ID()]
-				if toService == nil {
-					toService = opts.NewService()
-					serviceMap[to.ID()] = toService
-				}
-				fromService.Upstream = append(fromService.Upstream, toService.Name)
+		targets := g.From(from.ID())
+		for targets.Next() {
+			to := targets.Node()
+			toService := serviceMap[to.ID()]
+			if toService == nil {
+				toService = opts.NewService()
+				serviceMap[to.ID()] = toService
 			}
+			fromService.Upstream = append(fromService.Upstream, toService.Name)
 		}
 	}
 
 	t := template.Must(template.New("workload").Parse(workloadTemplate))
-	for _, s := range serviceMap {
+	for i := 1; i <= len(serviceMap); i++ {
+		s := serviceMap[int64(i)]
+		if s == nil {
+			panic(i)
+		}
 		if err := t.Execute(opts.Output, s); err != nil {
 			panic(err)
 		}
