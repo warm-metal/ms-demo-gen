@@ -19,9 +19,9 @@ import (
 )
 
 var (
-	numServices        = flag.Int("services", 1, "Number of services in the demo")
-	maxCaller          = flag.Int("max-caller", 1, "Maximum number of callers for each service except the root service")
-	maxCallee          = flag.Int("max-callee", 1, "Maximum number of callees for each service except leaf services")
+	numServices        = flag.Int("services", 10, "Number of services in the demo")
+	maxCaller          = flag.Int("max-caller", 2, "Maximum number of callers for each service except the root service")
+	maxCallee          = flag.Int("max-callee", 3, "Maximum number of callees for each service except leaf services")
 	maxReplicas        = flag.Int("max-replicas", 1, "Maximum number of replicas")
 	longestCallChain   = flag.Int("longest-call-chain", -1, "Number of services in the longest call chain. -1 means not limit")
 	outputDir          = flag.String("out", "", "The directory to where manifests to be generated. Manifests will be printed in the console if not specified.")
@@ -33,6 +33,7 @@ var (
 	clientSizeTimeout  = flag.Duration("timeout", 0, "Client side timeout in time.Duration. 0 means never expire.")
 	QueryInParallel    = flag.Bool("parallel", false, "If true, requests to all upstreams are issued at the same time. Otherwise, in the given order.")
 	longConn           = flag.Bool("long", false, "If true, clients will use same L4 connection for precedure requests of the same upstream. Otherwise, build a new connection for each request.")
+	numTrafficGenProc  = flag.Int("traffic-gen-proc", 1, "Number of concurrent processors per upstream")
 )
 
 func main() {
@@ -76,9 +77,10 @@ func main() {
 			QueryInParallel: *QueryInParallel,
 			LongConn:        *longConn,
 		},
-		Output:             out,
-		Namespaces:         strings.Split(*targetNamespaces, ","),
-		ReplicaNumberRange: [2]int{1, *maxReplicas},
-		Image:              *image,
+		Output:                         out,
+		Namespaces:                     strings.Split(*targetNamespaces, ","),
+		ReplicaNumberRange:             [2]int{1, *maxReplicas},
+		Image:                          *image,
+		NumConcurrentProcForTrafficGen: *numTrafficGenProc,
 	})
 }

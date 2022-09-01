@@ -7,6 +7,7 @@ metadata:
   namespace: {{.Namespace}}
   labels:
     app: {{.Name}}
+    origin: wsd
 spec:
   replicas: {{.NumReplicas}}
   selector:
@@ -16,6 +17,7 @@ spec:
     metadata:
       labels:
         app: {{.Name}}
+        origin: wsd
     spec:
       containers:
       - name: {{.Name}}
@@ -28,12 +30,15 @@ spec:
         - name: ENV_UPSTREAM
           value: "{{.JoinUpstreams}}"
         - name: ENV_QUERY_IN_PARALLEL
-          value: "{{.QueryInParallel}}"
+          value: "{{.QueryInParallelInInt}}"
         - name: ENV_USE_LONG_CONNECTION
-          value: "{{.LongConn}}"
+          value: "{{.LongConnInInt}}"
         - name: ENV_TIMEOUT
           value: "{{.Timeout}}"
-{{if .Address}}
+{{- if not .Address}}
+        - name: ENV_CONCURRENT_PROCS
+          value: "{{.NumTrafficGenProc}}"
+{{- else}}
         ports:
         - containerPort: 80
 {{- end}}
@@ -44,6 +49,9 @@ kind: Service
 metadata:
   name: {{.Name}}
   namespace: {{.Namespace}}
+  labels:
+    app: {{.Name}}
+    origin: wsd
 spec:
   selector:
     app: {{.Name}}

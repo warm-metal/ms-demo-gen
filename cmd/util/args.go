@@ -10,7 +10,7 @@ func LookupEnv[TargetType int](key string) (t TargetType) {
 	v := os.Getenv(key)
 	i, err := strconv.Atoi(v)
 	if err != nil {
-		panic(err)
+		panic(key)
 	}
 	return TargetType(i)
 }

@@ -15,23 +15,41 @@ import (
 type Service struct {
 	service.Options
 
-	Name        string
-	Namespace   string
-	NumReplicas int
-	Image       string
+	Name              string
+	Namespace         string
+	NumReplicas       int
+	Image             string
+	NumTrafficGenProc int
 }
 
 func (s Service) JoinUpstreams() string {
 	return strings.Join(s.Upstream, ",")
 }
 
+func (s Service) QueryInParallelInInt() int {
+	if s.QueryInParallel {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func (s Service) LongConnInInt() int {
+	if s.LongConn {
+		return 1
+	} else {
+		return 0
+	}
+}
+
 type Options struct {
 	service.Options
 
-	Output             io.Writer
-	Namespaces         []string
-	ReplicaNumberRange [2]int
-	Image              string
+	Output                         io.Writer
+	Namespaces                     []string
+	ReplicaNumberRange             [2]int
+	Image                          string
+	NumConcurrentProcForTrafficGen int
 }
 
 func (o Options) Namespace() string {
@@ -60,11 +78,12 @@ func (o Options) NumReplicas() int {
 
 func (o Options) NewService() *Service {
 	return &Service{
-		Options:     o.Options,
-		Name:        rands.HumanFriendlyEnglishString(10),
-		Namespace:   o.Namespace(),
-		NumReplicas: o.NumReplicas(),
-		Image:       o.Image,
+		Options:           o.Options,
+		Name:              rands.HumanFriendlyEnglishString(10),
+		Namespace:         o.Namespace(),
+		NumReplicas:       o.NumReplicas(),
+		Image:             o.Image,
+		NumTrafficGenProc: o.NumConcurrentProcForTrafficGen,
 	}
 }
 
