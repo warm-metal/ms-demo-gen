@@ -69,6 +69,7 @@ func (o Options) NewService() *Service {
 }
 
 func GenForK8s(g graph.Directed, opts *Options) {
+	opts.Address = ":80"
 	it := g.Nodes()
 	serviceMap := make(map[int64]*Service, it.Len())
 	for it.Next() {
@@ -91,14 +92,26 @@ func GenForK8s(g graph.Directed, opts *Options) {
 		}
 	}
 
-	t := template.Must(template.New("workload").Parse(workloadTemplate))
+	workloadTmpl := template.Must(template.New("workload").Parse(deployTemplate + serviceTemplate))
 	for i := 1; i <= len(serviceMap); i++ {
 		s := serviceMap[int64(i)]
 		if s == nil {
 			panic(i)
 		}
-		if err := t.Execute(opts.Output, s); err != nil {
+		if err := workloadTmpl.Execute(opts.Output, s); err != nil {
 			panic(err)
 		}
+	}
+
+	deploymentTmpl := template.Must(template.New("deploy").Parse(deployTemplate))
+	trafficGen := opts.NewService()
+	trafficGen.Name = "traffic-generator"
+	trafficGen.NumReplicas = 1
+	trafficGen.Image = "docker.io/warmmetal/ms-demo-traffic:latest"
+	trafficGen.Upstream = []string{serviceMap[1].Name}
+	trafficGen.PayloadSize = -1
+	trafficGen.Address = ""
+	if err := deploymentTmpl.Execute(opts.Output, trafficGen); err != nil {
+		panic(err)
 	}
 }

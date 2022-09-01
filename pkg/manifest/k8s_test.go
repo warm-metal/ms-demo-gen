@@ -35,6 +35,7 @@ func TestManifestGeneration(t *testing.T) {
 			PayloadSize:     10,
 			UploadSize:      5,
 			QueryInParallel: true,
+			Address:         ":80",
 		},
 		Output:             s,
 		Namespaces:         []string{"ms", "ms2", "ms3"},

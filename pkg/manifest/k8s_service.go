@@ -1,6 +1,6 @@
 package manifest
 
-const workloadTemplate = `apiVersion: apps/v1
+const deployTemplate = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{.Name}}
@@ -20,23 +20,26 @@ spec:
       containers:
       - name: {{.Name}}
         image: {{.Image}}
-		env:
-		- name: ENV_PAYLOAD_SIZE
-		  value: "{{.PayloadSize}}"
-		- name: ENV_UPLOAD_SIZE
-		  value: "{{.UploadSize}}"
-		- name: ENV_UPSTREAM
-		  value: "{{.JoinUpstreams}}"
-		- name: ENV_QUERY_IN_PARALLEL
-		  value: "{{.QueryInParallel}}"
-		- name: ENV_USE_LONG_CONNECTION
-		  value: "{{.LongConn}}"
-		- name: ENV_TIMEOUT
-		  value: "{{.Timeout}}"
+        env:
+        - name: ENV_PAYLOAD_SIZE
+          value: "{{.PayloadSize}}"
+        - name: ENV_UPLOAD_SIZE
+          value: "{{.UploadSize}}"
+        - name: ENV_UPSTREAM
+          value: "{{.JoinUpstreams}}"
+        - name: ENV_QUERY_IN_PARALLEL
+          value: "{{.QueryInParallel}}"
+        - name: ENV_USE_LONG_CONNECTION
+          value: "{{.LongConn}}"
+        - name: ENV_TIMEOUT
+          value: "{{.Timeout}}"
+{{if .Address}}
         ports:
         - containerPort: 80
+{{- end}}
 ---
-apiVersion: v1
+`
+const serviceTemplate = `apiVersion: v1
 kind: Service
 metadata:
   name: {{.Name}}
