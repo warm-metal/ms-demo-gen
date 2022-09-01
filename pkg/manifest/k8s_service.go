@@ -37,7 +37,9 @@ spec:
           value: "{{.Timeout}}"
 {{- if not .Address}}
         - name: ENV_CONCURRENT_PROCS
-          value: "{{.NumTrafficGenProc}}"
+          value: "{{.NumConcurrentProc}}"
+        - name: ENV_INTERVAL_BETWEEN_QUERIES
+          value: "{{.QueryInterval}}"
 {{- else}}
         ports:
         - containerPort: 80

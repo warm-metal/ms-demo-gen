@@ -4,12 +4,13 @@ import (
 	"context"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/warm-metal/ms-demo-gen.git/cmd/util"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
 )
 
-func startQuery(ctx context.Context, c *service.RemoteClient, uploadSize int) <-chan struct{} {
+func startQuery(ctx context.Context, c *service.RemoteClient, uploadSize int, interval time.Duration) <-chan struct{} {
 	done := make(chan struct{})
 	exitted := false
 	go func(exit *bool) {
@@ -26,6 +27,9 @@ func startQuery(ctx context.Context, c *service.RemoteClient, uploadSize int) <-
 			}
 
 			c.Query(uploadSize, -1)
+			if interval > 0 {
+				time.Sleep(interval)
+			}
 		}
 		close(done)
 	}(done, &exitted)
@@ -35,6 +39,7 @@ func startQuery(ctx context.Context, c *service.RemoteClient, uploadSize int) <-
 
 func main() {
 	numProc := util.LookupEnv(util.ArgsKeyNumConcurrentProcess)
+	queryInterval := util.LookupEnvDuration(util.ArgsKeyIntervalBetweenQueries)
 	opts := &service.Options{
 		UploadSize:      util.LookupEnv(util.ArgsKeyUploadSize),
 		Upstream:        strings.Split(os.Getenv(util.ArgsKeyUpstream), ","),
@@ -46,7 +51,7 @@ func main() {
 	ctx := context.Background()
 	waitingList := make([]<-chan struct{}, numProc)
 	for i := 0; i < numProc; i++ {
-		waitingList[i] = startQuery(ctx, service.NewClient(opts), opts.UploadSize)
+		waitingList[i] = startQuery(ctx, service.NewClient(opts), opts.UploadSize, queryInterval)
 	}
 
 	for i := range waitingList {

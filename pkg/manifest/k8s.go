@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
 	"gonum.org/v1/gonum/graph"
@@ -13,13 +14,13 @@ import (
 )
 
 type Service struct {
+	TrafficGenOptions
 	service.Options
 
-	Name              string
-	Namespace         string
-	NumReplicas       int
-	Image             string
-	NumTrafficGenProc int
+	Name        string
+	Namespace   string
+	NumReplicas int
+	Image       string
 }
 
 func (s Service) JoinUpstreams() string {
@@ -42,14 +43,19 @@ func (s Service) LongConnInInt() int {
 	}
 }
 
+type TrafficGenOptions struct {
+	NumConcurrentProc int
+	QueryInterval     time.Duration
+}
+
 type Options struct {
+	TrafficGenOptions
 	service.Options
 
-	Output                         io.Writer
-	Namespaces                     []string
-	ReplicaNumberRange             [2]int
-	Image                          string
-	NumConcurrentProcForTrafficGen int
+	Output             io.Writer
+	Namespaces         []string
+	ReplicaNumberRange [2]int
+	Image              string
 }
 
 func (o Options) Namespace() string {
@@ -79,11 +85,11 @@ func (o Options) NumReplicas() int {
 func (o Options) NewService() *Service {
 	return &Service{
 		Options:           o.Options,
+		TrafficGenOptions: o.TrafficGenOptions,
 		Name:              rands.HumanFriendlyEnglishString(10),
 		Namespace:         o.Namespace(),
 		NumReplicas:       o.NumReplicas(),
 		Image:             o.Image,
-		NumTrafficGenProc: o.NumConcurrentProcForTrafficGen,
 	}
 }
 

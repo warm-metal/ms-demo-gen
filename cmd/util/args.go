@@ -16,13 +16,14 @@ func LookupEnv[TargetType int](key string) (t TargetType) {
 }
 
 const (
-	ArgsKeyPayloadSize          = "ENV_PAYLOAD_SIZE"
-	ArgsKeyUploadSize           = "ENV_UPLOAD_SIZE"
-	ArgsKeyUpstream             = "ENV_UPSTREAM"
-	ArgsKeyQueryInParallel      = "ENV_QUERY_IN_PARALLEL"
-	ArgsKeyLongConnection       = "ENV_USE_LONG_CONNECTION"
-	ArgsKeyQueryTimeout         = "ENV_TIMEOUT"
-	ArgsKeyNumConcurrentProcess = "ENV_CONCURRENT_PROCS"
+	ArgsKeyPayloadSize            = "ENV_PAYLOAD_SIZE"
+	ArgsKeyUploadSize             = "ENV_UPLOAD_SIZE"
+	ArgsKeyUpstream               = "ENV_UPSTREAM"
+	ArgsKeyQueryInParallel        = "ENV_QUERY_IN_PARALLEL"
+	ArgsKeyLongConnection         = "ENV_USE_LONG_CONNECTION"
+	ArgsKeyQueryTimeout           = "ENV_TIMEOUT"
+	ArgsKeyNumConcurrentProcess   = "ENV_CONCURRENT_PROCS"
+	ArgsKeyIntervalBetweenQueries = "ENV_INTERVAL_BETWEEN_QUERIES"
 )
 
 func LookupEnvDuration(key string) time.Duration {
