@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -74,26 +75,50 @@ type RemoteClient struct {
 	timeout        time.Duration
 }
 
-func (c *RemoteClient) Query(uploadSize, maxPayloadSize int) (resp string) {
+func (c *RemoteClient) call(uploadSize int, respWriter io.Writer) (waitingList []chan io.Writer) {
 	if len(c.upstream) == 0 {
 		return
 	}
 
-	waitingList := make([]chan string, len(c.upstream))
+	waitingList = make([]chan io.Writer, len(c.upstream))
 	for i, up := range c.upstream {
-		waitingList[i] = make(chan string, 1)
+		waitingList[i] = make(chan io.Writer, 1)
+		w := respWriter
+		if w == nil {
+			w = &strings.Builder{}
+		}
 		if c.inParallel {
-			go c.asyncQuery(uploadSize, up, waitingList[i])
+			go c.asyncQuery(uploadSize, up, w, waitingList[i])
 		} else {
-			waitingList[i] <- c.syncQuery(uploadSize, up)
+			c.syncQuery(uploadSize, up, w)
+			waitingList[i] <- w
 		}
 	}
 
+	return
+}
+
+func (c *RemoteClient) Discard(uploadSize int) {
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	defer devNull.Close()
+	waitingList := c.call(uploadSize, devNull)
+	for _, w := range waitingList {
+		<-w
+	}
+}
+
+func (c *RemoteClient) Query(uploadSize, maxPayloadSize int) (resp string) {
+	waitingList := c.call(uploadSize, nil)
 	payloadSizePlan := make([]int, len(c.upstream))
 	resps := make([]string, len(c.upstream))
 	maxPayloadSizePerUpstream := maxPayloadSize / len(c.upstream)
 	for i, w := range waitingList {
-		resps[i] = <-w
+		reader := <-w
+		resps[i] = reader.(*strings.Builder).String()
 		// taking length of the upsteam url into account
 		if maxPayloadSize > 0 {
 			payloadSizePlan[i] = len(resps[i]) + len(c.upstream[i]) + 1 - maxPayloadSizePerUpstream
@@ -134,7 +159,7 @@ func (c *RemoteClient) genClient(upstream string) *http.Client {
 	}
 }
 
-func (c *RemoteClient) syncQuery(uploadSize int, upstream string) string {
+func (c *RemoteClient) syncQuery(uploadSize int, upstream string, respWriter io.Writer) {
 	client := c.genClient(upstream)
 	url := "http://" + upstream
 	var err error
@@ -146,24 +171,24 @@ func (c *RemoteClient) syncQuery(uploadSize int, upstream string) string {
 	}
 
 	if err != nil {
-		return fmt.Sprintf("Error: %s", err)
+		respWriter.Write([]byte(fmt.Sprintf("Error: %s", err)))
+		return
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Sprintf("Error: %s", resp.Status)
+		respWriter.Write([]byte(fmt.Sprintf("Error: %s", resp.Status)))
+		return
 	}
 
-	b := &strings.Builder{}
-	io.Copy(b, resp.Body)
-	return b.String()
+	io.Copy(respWriter, resp.Body)
 }
 
-func (c *RemoteClient) asyncQuery(uploadSize int, upstream string, out chan string) {
+func (c *RemoteClient) asyncQuery(uploadSize int, upstream string, respWriter io.Writer, out chan io.Writer) {
 	defer close(out)
-	resp := c.syncQuery(uploadSize, upstream)
-	out <- resp
+	c.syncQuery(uploadSize, upstream, respWriter)
+	out <- respWriter
 }
 
 func NewClient(opts *Options) *RemoteClient {

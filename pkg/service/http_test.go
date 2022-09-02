@@ -84,13 +84,6 @@ func httpTraffic(t *testing.T, payloadSize, uploadSize int, queryInParallel bool
 			optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize)
 		t.FailNow()
 	}
-
-	if optClient.PayloadSize > optServer.PayloadSize+optServer2.PayloadSize &&
-		(!strings.Contains(body.String(), optServer.Address) || !strings.Contains(body.String(), optServer2.Address)) {
-		t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d\n",
-			optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize)
-		t.FailNow()
-	}
 }
 
 func TestHttpTrafficWoPayloads(t *testing.T) {

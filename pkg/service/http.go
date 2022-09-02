@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	rands "github.com/xyproto/randomstring"
@@ -50,23 +51,19 @@ type HttpServer struct {
 
 func (s *HttpServer) root(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		ioutil.ReadAll(r.Body)
+		devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+		if err != nil {
+			panic(err)
+		}
+		io.Copy(devNull, r.Body)
+		devNull.Close()
 		r.Body.Close()
 	}
 
-	resp := s.cli.Query(s.uploadSize, s.PayloadSize)
-	if len(resp) > s.PayloadSize {
-		panic("query payload size exceeds the limit")
-	}
-
+	s.cli.Discard(s.uploadSize)
 	w.WriteHeader(http.StatusOK)
 	if s.PayloadSize > 0 {
-		selfPlayloadSize := s.PayloadSize - len(resp)
-		if selfPlayloadSize > 0 {
-			resp = rands.HumanFriendlyEnglishString(selfPlayloadSize) + resp
-		}
-
-		if _, err := w.Write([]byte(resp)); err != nil {
+		if _, err := w.Write([]byte(rands.HumanFriendlyEnglishString(s.PayloadSize))); err != nil {
 			panic(err)
 		}
 	}

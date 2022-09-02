@@ -14,6 +14,7 @@ import (
 	"github.com/warm-metal/ms-demo-gen.git/pkg/manifest"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
 	"gonum.org/v1/gonum/graph/encoding/dot"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	rands "github.com/xyproto/randomstring"
 )
@@ -28,13 +29,15 @@ var (
 	targetNamespaces        = flag.String("namespaces", "", "Namespaces where workloads to be deployed. Multiple namespaces should be seperated by a comma(,).")
 	image                   = flag.String("image", "docker.io/warmmetal/ms-demo-service:latest", "Image for each workload")
 	alsoOutputTopology      = flag.Bool("gen-topology", true, "Output the topology in a DOT file.")
-	payloadSize             = flag.Int("payload-size", 64, "The payload size of each backend")
-	uploadSize              = flag.Int("upload-size", 0, "The uploaded data size of each request. If it is greater than 0, POST requests are issued, otherwize, GET requests instead. ")
-	clientSizeTimeout       = flag.Duration("timeout", 0, "Client side timeout in time.Duration. 0 means never expire.")
+	payloadSize             = flag.String("payload-size", "64", "The payload size of each backend. Such as 10Ki, 1Mi")
+	uploadSize              = flag.String("upload-size", "0", "The uploaded data size of each request. Such as 1Ki. If it is greater than 0, POST requests are issued, otherwize, GET requests instead. ")
+	clientSideTimeout       = flag.Duration("timeout", 0, "Client side timeout in time.Duration. 0 means never expire.")
 	QueryInParallel         = flag.Bool("parallel", false, "If true, requests to all upstreams are issued at the same time. Otherwise, in the given order.")
 	longConn                = flag.Bool("long", false, "If true, clients will use same L4 connection for precedure requests of the same upstream. Otherwise, build a new connection for each request.")
 	numTrafficGenProc       = flag.Int("traffic-gen-proc", 1, "Number of concurrent processors per upstream")
 	trafficGenQueryInterval = flag.Duration("traffic-gen-query-interval", time.Second, "Interval between queries of traffic generator.")
+
+	// FIXME Resource limit for each service
 )
 
 func main() {
@@ -70,11 +73,13 @@ func main() {
 		out = os.Stdout
 	}
 
+	payloadZ := resource.MustParse(*payloadSize)
+	uploadZ := resource.MustParse(*uploadSize)
 	manifest.GenForK8s(g, &manifest.Options{
 		Options: service.Options{
-			PayloadSize:     *payloadSize,
-			UploadSize:      *uploadSize,
-			Timeout:         *clientSizeTimeout,
+			PayloadSize:     int(payloadZ.Value()),
+			UploadSize:      int(uploadZ.Value()),
+			Timeout:         *clientSideTimeout,
 			QueryInParallel: *QueryInParallel,
 			LongConn:        *longConn,
 		},
