@@ -7,7 +7,7 @@ metadata:
   namespace: {{.Namespace}}
   labels:
     app: {{.Name}}
-    origin: wsd
+    origin: msdgen
 spec:
   replicas: {{.NumReplicas}}
   selector:
@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         app: {{.Name}}
-        origin: wsd
+        origin: msdgen
     spec:
       containers:
       - name: {{.Name}}
@@ -53,7 +53,7 @@ metadata:
   namespace: {{.Namespace}}
   labels:
     app: {{.Name}}
-    origin: wsd
+    origin: msdgen
 spec:
   selector:
     app: {{.Name}}
