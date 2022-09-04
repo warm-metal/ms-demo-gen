@@ -14,6 +14,9 @@ bin: default
 test:
 	go test -v -count=1 ./...
 
+benchmark:
+	go test -benchmem -run=^$$ -bench ^BenchmarkHttpService$$ -benchmem -cpuprofile profile.out ./pkg/service
+
 image:
 	docker build -f service.dockerfile --target service -t docker.io/warmmetal/ms-demo-service:$(VERSION) .
 	docker build -f service.dockerfile --target traffic-gen -t docker.io/warmmetal/ms-demo-traffic:$(VERSION) .

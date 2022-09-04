@@ -16,7 +16,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func httpTraffic(t *testing.T, payloadSize, uploadSize int, queryInParallel bool) {
+func httpTraffic(t testing.TB, payloadSize, uploadSize int, queryInParallel bool, loop int) {
 	randomSize := func(max int) int {
 		if max == 0 {
 			return max
@@ -62,36 +62,41 @@ func httpTraffic(t *testing.T, payloadSize, uploadSize int, queryInParallel bool
 		<-clientDone
 	}()
 
-	resp, err := http.Get("http://" + optClient.Address)
-	if err != nil {
-		t.Log(err)
-		t.FailNow()
-		return
-	}
+	for i := 0; i < loop; i++ {
+		resp, err := http.Get("http://" + optClient.Address)
+		if err != nil {
+			t.Log(err)
+			t.FailNow()
+			return
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		t.Log(err)
-		t.FailNow()
-		return
-	}
+		if resp.StatusCode != http.StatusOK {
+			t.Log(err)
+			t.FailNow()
+			return
+		}
 
-	defer resp.Body.Close()
-	body := &strings.Builder{}
-	io.Copy(body, resp.Body)
-	t.Log(body.String())
-	if len(body.String()) != optClient.PayloadSize {
-		t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d\n",
-			optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize)
-		t.FailNow()
+		defer resp.Body.Close()
+		body := &strings.Builder{}
+		io.Copy(body, resp.Body)
+		if len(body.String()) != optClient.PayloadSize {
+			t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d\n",
+				optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize)
+			t.FailNow()
+		}
 	}
 }
 
 func TestHttpTrafficWoPayloads(t *testing.T) {
-	httpTraffic(t, 0, 0, false)
-	httpTraffic(t, 0, 0, true)
+	httpTraffic(t, 0, 0, false, 1)
+	httpTraffic(t, 0, 0, true, 1)
 }
 
 func TestHttpTrafficWPayloads(t *testing.T) {
-	httpTraffic(t, 512, 64, false)
-	httpTraffic(t, 512, 64, true)
+	httpTraffic(t, 512, 64, false, 1)
+	httpTraffic(t, 512, 64, true, 1)
+}
+
+func BenchmarkHttpService(b *testing.B) {
+	httpTraffic(b, 512, 64, true, 100)
 }
