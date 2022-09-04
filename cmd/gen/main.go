@@ -21,8 +21,8 @@ import (
 
 var (
 	numServices             = flag.Int("services", 10, "Number of services in the demo")
-	maxCaller               = flag.Int("max-caller", 2, "Maximum number of callers for each service except the root service")
-	maxCallee               = flag.Int("max-callee", 3, "Maximum number of callees for each service except leaf services")
+	maxCaller               = flag.Int("max-downstream", 2, "Maximum number of callers for each service except the root service")
+	maxCallee               = flag.Int("max-upstream", 3, "Maximum number of callees for each service except leaf services")
 	maxReplicas             = flag.Int("max-replicas", 1, "Maximum number of replicas")
 	longestCallChain        = flag.Int("longest-call-chain", -1, "Number of services in the longest call chain. -1 means not limit")
 	outputDir               = flag.String("out", "", "The directory to where manifests to be generated. Manifests will be printed in the console if not specified.")

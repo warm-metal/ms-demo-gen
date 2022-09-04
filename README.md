@@ -41,8 +41,8 @@ or waiting less time between queries in each processor, through `-traffic-gen-pr
 MSDGen currently generates service connectivity randomly under given constraints.
 
 You can specify the total number of services through `-services`.
-Then, set how many upstreams a service can connect at most via `-max-callee`
-and a upper bound of downstream number of a service through `-max-caller`.
+Then, set how many upstreams a service can connect at most via `-max-upstream`
+and a upper bound of downstream number of a service through `-max-downstream`.
 `-longest-call-chain` can be used to limit the number of services which a query may walk through.
 If the topology of a demo can be a tree with `gateway` service as its root, `-longest-call-chain` will define its height.
 
