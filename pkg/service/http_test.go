@@ -26,21 +26,21 @@ func httpTraffic(t testing.TB, payloadSize, uploadSize int, queryInParallel bool
 	}
 
 	optServer := &Options{
-		Address:         ":8001",
+		Address:         "127.0.0.1:8001",
 		PayloadSize:     randomSize(payloadSize),
 		UploadSize:      randomSize(uploadSize),
 		QueryInParallel: queryInParallel,
 	}
 
 	optServer2 := &Options{
-		Address:         ":8002",
+		Address:         "127.0.0.1:8002",
 		PayloadSize:     randomSize(payloadSize),
 		UploadSize:      randomSize(uploadSize),
 		QueryInParallel: queryInParallel,
 	}
 
 	optClient := &Options{
-		Address:         ":8000",
+		Address:         "127.0.0.1:8000",
 		Upstream:        []string{optServer.Address, optServer2.Address},
 		PayloadSize:     randomSize(payloadSize),
 		UploadSize:      randomSize(uploadSize),
@@ -71,7 +71,7 @@ func httpTraffic(t testing.TB, payloadSize, uploadSize int, queryInParallel bool
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Log(err)
+			t.Log(resp.StatusCode)
 			t.FailNow()
 			return
 		}
@@ -80,8 +80,8 @@ func httpTraffic(t testing.TB, payloadSize, uploadSize int, queryInParallel bool
 		body := &strings.Builder{}
 		io.Copy(body, resp.Body)
 		if len(body.String()) != optClient.PayloadSize {
-			t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d\n",
-				optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize)
+			t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d, response size:%d\n",
+				optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize, len(body.String()))
 			t.FailNow()
 		}
 	}
@@ -98,5 +98,5 @@ func TestHttpTrafficWPayloads(t *testing.T) {
 }
 
 func BenchmarkHttpService(b *testing.B) {
-	httpTraffic(b, 512, 64, true, 100)
+	httpTraffic(b, 512, 64, true, 1000)
 }

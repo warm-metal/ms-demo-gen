@@ -8,9 +8,11 @@ import (
 
 	"github.com/warm-metal/ms-demo-gen.git/cmd/util"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
+
+	rands "github.com/xyproto/randomstring"
 )
 
-func startQuery(ctx context.Context, c *service.RemoteClient, uploadSize int, interval time.Duration) <-chan struct{} {
+func startQuery(ctx context.Context, c *service.RemoteClient, uploadData string, interval time.Duration) <-chan struct{} {
 	done := make(chan struct{})
 	exitted := false
 	go func(exit *bool) {
@@ -26,7 +28,7 @@ func startQuery(ctx context.Context, c *service.RemoteClient, uploadSize int, in
 				break
 			}
 
-			c.Query(uploadSize, -1)
+			c.Query(strings.NewReader(uploadData), -1)
 			if interval > 0 {
 				time.Sleep(interval)
 			}
@@ -51,7 +53,7 @@ func main() {
 	ctx := context.Background()
 	waitingList := make([]<-chan struct{}, numProc)
 	for i := 0; i < numProc; i++ {
-		waitingList[i] = startQuery(ctx, service.NewClient(opts), opts.UploadSize, queryInterval)
+		waitingList[i] = startQuery(ctx, service.NewClient(opts), rands.HumanFriendlyEnglishString(opts.UploadSize), queryInterval)
 	}
 
 	for i := range waitingList {

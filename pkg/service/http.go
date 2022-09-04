@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	rands "github.com/xyproto/randomstring"
@@ -23,8 +24,6 @@ type Options struct {
 
 func CreateServer(opts *Options) *HttpServer {
 	s := &HttpServer{
-		PayloadSize: opts.PayloadSize,
-		uploadSize:  opts.UploadSize,
 		cli: &RemoteClient{
 			upstream:       opts.Upstream,
 			inParallel:     opts.QueryInParallel,
@@ -36,17 +35,25 @@ func CreateServer(opts *Options) *HttpServer {
 		},
 	}
 
+	if opts.UploadSize > 0 {
+		s.uploadData = rands.HumanFriendlyEnglishString(opts.UploadSize)
+	}
+
+	if opts.PayloadSize > 0 {
+		s.payloadData = rands.HumanFriendlyEnglishString(opts.PayloadSize)
+	}
+
 	s.serveMux.HandleFunc("/", s.root)
 	s.server.Handler = &s.serveMux
 	return s
 }
 
 type HttpServer struct {
-	PayloadSize int
-	uploadSize  int
-	cli         *RemoteClient
-	serveMux    http.ServeMux
-	server      *http.Server
+	payloadData string
+	uploadData  string
+	cli           *RemoteClient
+	serveMux      http.ServeMux
+	server        *http.Server
 }
 
 func (s *HttpServer) root(w http.ResponseWriter, r *http.Request) {
@@ -60,10 +67,10 @@ func (s *HttpServer) root(w http.ResponseWriter, r *http.Request) {
 		r.Body.Close()
 	}
 
-	s.cli.Discard(s.uploadSize)
+	s.cli.Discard(strings.NewReader(s.uploadData))
 	w.WriteHeader(http.StatusOK)
-	if s.PayloadSize > 0 {
-		if _, err := w.Write([]byte(rands.HumanFriendlyEnglishString(s.PayloadSize))); err != nil {
+	if len(s.payloadData) > 0 {
+		if _, err := w.Write([]byte(s.payloadData)); err != nil {
 			panic(err)
 		}
 	}
@@ -81,6 +88,7 @@ func (s *HttpServer) LoopInBackground(ctx context.Context) <-chan struct{} {
 		for {
 			<-ctx.Done()
 			s.server.Close()
+			return
 		}
 	}()
 
