@@ -76,9 +76,9 @@ func httpTraffic(t testing.TB, payloadSize, uploadSize int, queryInParallel bool
 			return
 		}
 
-		defer resp.Body.Close()
 		body := &strings.Builder{}
 		io.Copy(body, resp.Body)
+		resp.Body.Close()
 		if len(body.String()) != optClient.PayloadSize {
 			t.Logf("client payload size: %d, server1 payload size: %d, server2 payload size:%d, response size:%d\n",
 				optClient.PayloadSize, optServer.PayloadSize, optServer2.PayloadSize, len(body.String()))
@@ -99,4 +99,8 @@ func TestHttpTrafficWPayloads(t *testing.T) {
 
 func BenchmarkHttpService(b *testing.B) {
 	httpTraffic(b, 512, 64, true, 1000)
+}
+
+func BenchmarkNonDataHttpService(b *testing.B) {
+	httpTraffic(b, 0, 0, true, 1000)
 }

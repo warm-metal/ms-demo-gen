@@ -73,7 +73,7 @@ type RemoteClient struct {
 	timeout        time.Duration
 }
 
-func (c *RemoteClient) call(uploadReader io.Reader, respWriter io.Writer) (waitingList []chan io.Writer) {
+func (c *RemoteClient) call(uploadReader *strings.Reader, respWriter io.Writer) (waitingList []chan io.Writer) {
 	if len(c.upstream) == 0 {
 		return
 	}
@@ -96,7 +96,7 @@ func (c *RemoteClient) call(uploadReader io.Reader, respWriter io.Writer) (waiti
 	return
 }
 
-func (c *RemoteClient) Discard(uploadReader io.Reader) {
+func (c *RemoteClient) Discard(uploadReader *strings.Reader) {
 	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	if err != nil {
 		panic(err)
@@ -109,7 +109,7 @@ func (c *RemoteClient) Discard(uploadReader io.Reader) {
 	}
 }
 
-func (c *RemoteClient) Query(uploadReader io.Reader, maxPayloadSize int) (resp string) {
+func (c *RemoteClient) Query(uploadReader *strings.Reader, maxPayloadSize int) (resp string) {
 	waitingList := c.call(uploadReader, nil)
 	payloadSizePlan := make([]int, len(c.upstream))
 	resps := make([]string, len(c.upstream))
@@ -157,7 +157,7 @@ func (c *RemoteClient) genClient(upstream string) *http.Client {
 	}
 }
 
-func (c *RemoteClient) syncQuery(uploadReader io.Reader, upstream string, respWriter io.Writer) {
+func (c *RemoteClient) syncQuery(uploadReader *strings.Reader, upstream string, respWriter io.Writer) {
 	client := c.genClient(upstream)
 	url := "http://" + upstream
 	var err error
@@ -183,7 +183,7 @@ func (c *RemoteClient) syncQuery(uploadReader io.Reader, upstream string, respWr
 	io.Copy(respWriter, resp.Body)
 }
 
-func (c *RemoteClient) asyncQuery(uploadReader io.Reader, upstream string, respWriter io.Writer, out chan io.Writer) {
+func (c *RemoteClient) asyncQuery(uploadReader *strings.Reader, upstream string, respWriter io.Writer, out chan io.Writer) {
 	defer close(out)
 	c.syncQuery(uploadReader, upstream, respWriter)
 	out <- respWriter

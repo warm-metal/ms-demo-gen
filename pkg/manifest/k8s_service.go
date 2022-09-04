@@ -1,5 +1,8 @@
 package manifest
 
+// FIXME generate manifest for namespace
+// FIXME all services should share the same app
+
 const deployTemplate = `apiVersion: apps/v1
 kind: Deployment
 metadata:

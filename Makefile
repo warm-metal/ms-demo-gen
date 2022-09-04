@@ -1,4 +1,4 @@
-VERSION = "v0.1.2"
+VERSION = "v0.1.3"
 
 default:
 	go vet ./...
@@ -15,7 +15,8 @@ test:
 	go test -v -count=1 ./...
 
 benchmark:
-	go test -benchmem -run=^$$ -bench ^BenchmarkHttpService$$ -benchmem -cpuprofile profile.out ./pkg/service
+	go test -benchmem -run=^$$ -bench ^BenchmarkHttpService$$ -benchmem -cpuprofile perf-http.out ./pkg/service
+	go test -benchmem -run=^$$ -bench ^BenchmarkNonDataHttpService$$ -benchmem -cpuprofile perf-nondata.out ./pkg/service
 
 image:
 	docker build -f service.dockerfile --target service -t docker.io/warmmetal/ms-demo-service:$(VERSION) .

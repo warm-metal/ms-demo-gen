@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -12,7 +13,7 @@ import (
 	rands "github.com/xyproto/randomstring"
 )
 
-func startQuery(ctx context.Context, c *service.RemoteClient, uploadData string, interval time.Duration) <-chan struct{} {
+func startQuery(ctx context.Context, c *service.RemoteClient, uploadReader *strings.Reader, interval time.Duration) <-chan struct{} {
 	done := make(chan struct{})
 	exitted := false
 	go func(exit *bool) {
@@ -28,7 +29,11 @@ func startQuery(ctx context.Context, c *service.RemoteClient, uploadData string,
 				break
 			}
 
-			c.Query(strings.NewReader(uploadData), -1)
+			if uploadReader != nil {
+				uploadReader.Seek(0, io.SeekStart)
+			}
+
+			c.Query(uploadReader, -1)
 			if interval > 0 {
 				time.Sleep(interval)
 			}
@@ -53,7 +58,12 @@ func main() {
 	ctx := context.Background()
 	waitingList := make([]<-chan struct{}, numProc)
 	for i := 0; i < numProc; i++ {
-		waitingList[i] = startQuery(ctx, service.NewClient(opts), rands.HumanFriendlyEnglishString(opts.UploadSize), queryInterval)
+		var uploadReader *strings.Reader
+		if opts.UploadSize > 0 {
+			uploadReader = strings.NewReader(rands.HumanFriendlyEnglishString(opts.UploadSize))
+		}
+
+		waitingList[i] = startQuery(ctx, service.NewClient(opts), uploadReader, queryInterval)
 	}
 
 	for i := range waitingList {

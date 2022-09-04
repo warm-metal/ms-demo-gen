@@ -36,11 +36,11 @@ func CreateServer(opts *Options) *HttpServer {
 	}
 
 	if opts.UploadSize > 0 {
-		s.uploadData = rands.HumanFriendlyEnglishString(opts.UploadSize)
+		s.uploadReader = strings.NewReader(rands.HumanFriendlyEnglishString(opts.UploadSize))
 	}
 
 	if opts.PayloadSize > 0 {
-		s.payloadData = rands.HumanFriendlyEnglishString(opts.PayloadSize)
+		s.payloadReader = strings.NewReader(rands.HumanFriendlyEnglishString(opts.PayloadSize))
 	}
 
 	s.serveMux.HandleFunc("/", s.root)
@@ -49,8 +49,8 @@ func CreateServer(opts *Options) *HttpServer {
 }
 
 type HttpServer struct {
-	payloadData string
-	uploadData  string
+	payloadReader *strings.Reader
+	uploadReader  *strings.Reader
 	cli           *RemoteClient
 	serveMux      http.ServeMux
 	server        *http.Server
@@ -67,10 +67,15 @@ func (s *HttpServer) root(w http.ResponseWriter, r *http.Request) {
 		r.Body.Close()
 	}
 
-	s.cli.Discard(strings.NewReader(s.uploadData))
+	if s.uploadReader != nil {
+		s.uploadReader.Seek(0, io.SeekStart)
+	}
+
+	s.cli.Discard(s.uploadReader)
 	w.WriteHeader(http.StatusOK)
-	if len(s.payloadData) > 0 {
-		if _, err := w.Write([]byte(s.payloadData)); err != nil {
+	if s.payloadReader != nil {
+		s.payloadReader.Seek(0, io.SeekStart)
+		if _, err := io.Copy(w, s.payloadReader); err != nil {
 			panic(err)
 		}
 	}
