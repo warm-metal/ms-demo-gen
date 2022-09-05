@@ -2,7 +2,10 @@ package service
 
 import (
 	"math/rand"
+	"net"
+	"net/http"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -80,5 +83,34 @@ func TestOversizedPayloadSizePlanning(t *testing.T) {
 			t.Log(plan)
 			t.FailNow()
 		}
+	}
+}
+
+func BenchmarkRemoteQuery(b *testing.B) {
+	serverMux := &http.ServeMux{}
+	payload := []byte(strings.Repeat("X", 512))
+	serverMux.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+		resp.Write(payload)
+	})
+
+	server := http.Server{
+		Addr:    "127.0.0.1:8000",
+		Handler: serverMux,
+	}
+
+	ln, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		panic(err)
+	}
+
+	go server.Serve(ln)
+	defer server.Close()
+
+	cli := NewClient(&Options{
+		Upstream: []string{server.Addr},
+	})
+
+	for i := 0; i < 100000; i++ {
+		cli.Query(nil, 512)
 	}
 }

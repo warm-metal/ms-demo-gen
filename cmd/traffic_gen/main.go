@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	_ "go.uber.org/automaxprocs"
 )
 
-func startQuery(ctx context.Context, c *service.RemoteClient, uploadReader *strings.Reader, interval time.Duration) <-chan struct{} {
+func startQuery(ctx context.Context, c *service.RemoteClient, uploadReader *strings.Reader, discardPayload bool, interval time.Duration) <-chan struct{} {
 	done := make(chan struct{})
 	exitted := false
 	go func(exit *bool) {
@@ -34,7 +35,12 @@ func startQuery(ctx context.Context, c *service.RemoteClient, uploadReader *stri
 				uploadReader.Seek(0, io.SeekStart)
 			}
 
-			c.Query(uploadReader, -1)
+			if discardPayload {
+				c.Discard(uploadReader)
+			} else {
+				fmt.Println(c.Query(uploadReader, -1))
+			}
+
 			if interval > 0 {
 				time.Sleep(interval)
 			}
@@ -48,6 +54,7 @@ func startQuery(ctx context.Context, c *service.RemoteClient, uploadReader *stri
 func main() {
 	numProc := util.LookupEnv(util.ArgsKeyNumConcurrentProcess)
 	queryInterval := util.LookupEnvDuration(util.ArgsKeyIntervalBetweenQueries)
+	discardUpstreamPayload := util.LookupEnv(util.ArgsKeyDiscardUpstreamPayload)
 	opts := &service.Options{
 		UploadSize:      util.LookupEnv(util.ArgsKeyUploadSize),
 		Upstream:        strings.Split(os.Getenv(util.ArgsKeyUpstream), ","),
@@ -65,7 +72,7 @@ func main() {
 		}
 
 		client := service.NewClient(opts)
-		waitingList[i] = startQuery(ctx, &client, uploadReader, queryInterval)
+		waitingList[i] = startQuery(ctx, &client, uploadReader, discardUpstreamPayload > 0, queryInterval)
 	}
 
 	for i := range waitingList {

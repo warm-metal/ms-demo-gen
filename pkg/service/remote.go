@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
-	"time"
 )
 
 type SignBit int
@@ -68,12 +66,9 @@ func fillStringBuilderOrDie(b *strings.Builder, vs ...string) {
 }
 
 type RemoteClient struct {
-	upstream       []string
-	inParallel     bool
-	longConnection bool
-	timeout        time.Duration
-	clients        map[string]*http.Client
-	guard          sync.Mutex
+	upstream   []string
+	inParallel bool
+	client     http.Client
 }
 
 func (c *RemoteClient) call(uploadReader *strings.Reader, respWriter io.Writer) (waitingList []chan io.Writer) {
@@ -151,34 +146,14 @@ func (c *RemoteClient) Query(uploadReader *strings.Reader, maxPayloadSize int) (
 	return b.String()
 }
 
-func (c *RemoteClient) genClient(upstream string) *http.Client {
-	c.guard.Lock()
-	defer c.guard.Unlock()
-
-	client := c.clients[upstream]
-	if client != nil {
-		return client
-	}
-
-	c.clients[upstream] = &http.Client{
-		Timeout: c.timeout,
-		Transport: &http.Transport{
-			DisableKeepAlives: !c.longConnection,
-		},
-	}
-
-	return c.clients[upstream]
-}
-
 func (c *RemoteClient) syncQuery(uploadReader *strings.Reader, upstream string, respWriter io.Writer) {
-	client := c.genClient(upstream)
 	url := "http://" + upstream
 	var err error
 	var resp *http.Response
 	if uploadReader != nil {
-		resp, err = client.Post(url, "text/plain", uploadReader)
+		resp, err = c.client.Post(url, "text/plain", uploadReader)
 	} else {
-		resp, err = client.Get(url)
+		resp, err = c.client.Get(url)
 	}
 
 	if err != nil {
@@ -204,10 +179,13 @@ func (c *RemoteClient) asyncQuery(uploadReader *strings.Reader, upstream string,
 
 func NewClient(opts *Options) RemoteClient {
 	return RemoteClient{
-		upstream:       opts.Upstream,
-		inParallel:     opts.QueryInParallel,
-		longConnection: opts.LongConn,
-		timeout:        opts.Timeout,
-		clients:        make(map[string]*http.Client, len(opts.Upstream)),
+		upstream:   opts.Upstream,
+		inParallel: opts.QueryInParallel,
+		client: http.Client{
+			Timeout: opts.Timeout,
+			Transport: &http.Transport{
+				DisableKeepAlives: !opts.LongConn,
+			},
+		},
 	}
 }

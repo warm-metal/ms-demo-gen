@@ -24,6 +24,7 @@ const (
 	ArgsKeyQueryTimeout           = "ENV_TIMEOUT"
 	ArgsKeyNumConcurrentProcess   = "ENV_CONCURRENT_PROCS"
 	ArgsKeyIntervalBetweenQueries = "ENV_INTERVAL_BETWEEN_QUERIES"
+	ArgsKeyDiscardUpstreamPayload = "ENV_DISCARD_UPSTREAM_PAYLOAD"
 )
 
 func LookupEnvDuration(key string) time.Duration {

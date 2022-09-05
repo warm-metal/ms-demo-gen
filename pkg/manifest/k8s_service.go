@@ -42,6 +42,8 @@ spec:
           value: "{{.NumConcurrentProc}}"
         - name: ENV_INTERVAL_BETWEEN_QUERIES
           value: "{{.QueryInterval}}"
+        - name: ENV_DISCARD_UPSTREAM_PAYLOAD
+          value: "1"
 {{- else}}
 {{- if .HasResourceConstraints}}
         resources:

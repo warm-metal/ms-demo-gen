@@ -1,4 +1,4 @@
-VERSION = "v0.1.3"
+VERSION = "v0.1.4"
 
 default:
 	go vet ./...
@@ -16,6 +16,7 @@ test:
 
 benchmark:
 	go test -benchmem -run=^$$ -bench ^BenchmarkHttpService$$ -benchmem -cpuprofile perf-http.out ./pkg/service
+	#go test -benchmem -run=^$$ -bench ^BenchmarkRemoteQuery$$ -benchmem -cpuprofile perf-client.out ./pkg/service
 	GOMAXPROCS=2 go test -benchmem -run=^$$ -bench ^BenchmarkNonDataHttpService$$ -benchmem -cpuprofile perf-nondata.out ./pkg/service
 
 image:
