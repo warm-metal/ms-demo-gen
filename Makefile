@@ -16,7 +16,7 @@ test:
 
 benchmark:
 	go test -benchmem -run=^$$ -bench ^BenchmarkHttpService$$ -benchmem -cpuprofile perf-http.out ./pkg/service
-	go test -benchmem -run=^$$ -bench ^BenchmarkNonDataHttpService$$ -benchmem -cpuprofile perf-nondata.out ./pkg/service
+	GOMAXPROCS=2 go test -benchmem -run=^$$ -bench ^BenchmarkNonDataHttpService$$ -benchmem -cpuprofile perf-nondata.out ./pkg/service
 
 image:
 	docker build -f service.dockerfile --target service -t docker.io/warmmetal/ms-demo-service:$(VERSION) .

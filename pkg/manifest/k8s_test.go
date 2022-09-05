@@ -41,6 +41,8 @@ func TestManifestGeneration(t *testing.T) {
 		Namespaces:         []string{"ms", "ms2", "ms3"},
 		ReplicaNumberRange: [2]int{1, 3},
 		Image:              "docker.io/warmmetal/ms-demo-service:latest",
+		CPURequest:         "1000m",
+		CPULimit:           "1000m",
 	}
 	manifest.GenForK8s(g, manifestOpts)
 	t.Log(s.String())

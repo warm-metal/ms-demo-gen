@@ -47,6 +47,7 @@ and a upper bound of downstream number of a service through `-max-downstream`.
 If the topology of a demo can be a tree with `gateway` service as its root, `-longest-call-chain` will define its height.
 
 If you need to change the number of service workload replicas, `-max-replicas` will be its upper bound. `-namespaces` is provided to randomly distribute services to multiple namespaces.
+And, service CPU management can be changed by setting `-service-cpu-request` and `-service-cpu-limit`.
 
 ## Service Benchmark
 The service benchmark will help you determine the **CPU** and **memory** capacity a demo takes.

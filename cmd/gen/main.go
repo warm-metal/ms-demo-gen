@@ -26,7 +26,7 @@ var (
 	maxReplicas             = flag.Int("max-replicas", 1, "Maximum number of replicas")
 	longestCallChain        = flag.Int("longest-call-chain", -1, "Number of services in the longest call chain. -1 means not limit")
 	outputDir               = flag.String("out", "", "The directory to where manifests to be generated. Manifests will be printed in the console if not specified.")
-	targetNamespaces        = flag.String("namespaces", "", "Namespaces where workloads to be deployed. Multiple namespaces should be seperated by a comma(,).")
+	targetNamespaces        = flag.String("namespaces", "", "Namespaces where workloads to be deployed. Multiple namespaces should be seperated by a comma(,). You need to create those namespaces manually.")
 	image                   = flag.String("image", "docker.io/warmmetal/ms-demo-service:latest", "Image for each workload")
 	alsoOutputTopology      = flag.Bool("gen-topology", true, "Output the topology in a DOT file.")
 	payloadSize             = flag.String("payload-size", "64", "The payload size of each backend. Such as 10Ki, 1Mi")
@@ -36,8 +36,8 @@ var (
 	longConn                = flag.Bool("long", false, "If true, clients will use same L4 connection for precedure requests of the same upstream. Otherwise, build a new connection for each request.")
 	numTrafficGenProc       = flag.Int("traffic-gen-proc", 1, "Number of concurrent processors per upstream")
 	trafficGenQueryInterval = flag.Duration("traffic-gen-query-interval", time.Second, "Interval between queries of traffic generator.")
-
-	// FIXME Resource limit for each service
+	cpuRequest              = flag.String("service-cpu-request", "", "CPU fragments requested for each service.")
+	cpuLimit                = flag.String("service-cpu-limit", "", "CPU fragments limited for each service.")
 )
 
 func main() {
@@ -91,5 +91,7 @@ func main() {
 		Namespaces:         strings.Split(*targetNamespaces, ","),
 		ReplicaNumberRange: [2]int{1, *maxReplicas},
 		Image:              *image,
+		CPURequest:         *cpuRequest,
+		CPULimit:           *cpuLimit,
 	})
 }

@@ -24,12 +24,7 @@ type Options struct {
 
 func CreateServer(opts *Options) *HttpServer {
 	s := &HttpServer{
-		cli: &RemoteClient{
-			upstream:       opts.Upstream,
-			inParallel:     opts.QueryInParallel,
-			longConnection: opts.LongConn,
-			timeout:        opts.Timeout,
-		},
+		cli: NewClient(opts),
 		server: &http.Server{
 			Addr: opts.Address,
 		},
@@ -51,7 +46,7 @@ func CreateServer(opts *Options) *HttpServer {
 type HttpServer struct {
 	payloadReader *strings.Reader
 	uploadReader  *strings.Reader
-	cli           *RemoteClient
+	cli           RemoteClient
 	serveMux      http.ServeMux
 	server        *http.Server
 }

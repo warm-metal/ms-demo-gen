@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -71,6 +72,8 @@ type RemoteClient struct {
 	inParallel     bool
 	longConnection bool
 	timeout        time.Duration
+	clients        map[string]*http.Client
+	guard          sync.Mutex
 }
 
 func (c *RemoteClient) call(uploadReader *strings.Reader, respWriter io.Writer) (waitingList []chan io.Writer) {
@@ -149,12 +152,22 @@ func (c *RemoteClient) Query(uploadReader *strings.Reader, maxPayloadSize int) (
 }
 
 func (c *RemoteClient) genClient(upstream string) *http.Client {
-	return &http.Client{
+	c.guard.Lock()
+	defer c.guard.Unlock()
+
+	client := c.clients[upstream]
+	if client != nil {
+		return client
+	}
+
+	c.clients[upstream] = &http.Client{
 		Timeout: c.timeout,
 		Transport: &http.Transport{
 			DisableKeepAlives: !c.longConnection,
 		},
 	}
+
+	return c.clients[upstream]
 }
 
 func (c *RemoteClient) syncQuery(uploadReader *strings.Reader, upstream string, respWriter io.Writer) {
@@ -189,11 +202,12 @@ func (c *RemoteClient) asyncQuery(uploadReader *strings.Reader, upstream string,
 	out <- respWriter
 }
 
-func NewClient(opts *Options) *RemoteClient {
-	return &RemoteClient{
+func NewClient(opts *Options) RemoteClient {
+	return RemoteClient{
 		upstream:       opts.Upstream,
 		inParallel:     opts.QueryInParallel,
 		longConnection: opts.LongConn,
 		timeout:        opts.Timeout,
+		clients:        make(map[string]*http.Client, len(opts.Upstream)),
 	}
 }

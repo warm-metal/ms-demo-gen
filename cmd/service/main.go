@@ -11,6 +11,7 @@ import (
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
 
 	rands "github.com/xyproto/randomstring"
+	_ "go.uber.org/automaxprocs"
 )
 
 func main() {

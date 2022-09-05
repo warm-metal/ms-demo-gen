@@ -1,25 +1,24 @@
 package manifest
 
-// FIXME generate manifest for namespace
-// FIXME all services should share the same app
-
 const deployTemplate = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{.Name}}
   namespace: {{.Namespace}}
   labels:
-    app: {{.Name}}
+    app: {{.App}}
     origin: msdgen
 spec:
   replicas: {{.NumReplicas}}
   selector:
     matchLabels:
-      app: {{.Name}}
+      app: {{.App}}
+      svc: {{.Name}}
   template:
     metadata:
       labels:
-        app: {{.Name}}
+        app: {{.App}}
+        svc: {{.Name}}
         origin: msdgen
     spec:
       containers:
@@ -44,6 +43,17 @@ spec:
         - name: ENV_INTERVAL_BETWEEN_QUERIES
           value: "{{.QueryInterval}}"
 {{- else}}
+{{- if .HasResourceConstraints}}
+        resources:
+{{- if .CPURequest}}
+          requests:
+            cpu: "{{.CPURequest}}"
+{{- end}}
+{{- if .CPULimit}}
+          limits:
+            cpu: "{{.CPULimit}}"
+{{- end}}
+{{- end}}
         ports:
         - containerPort: 80
 {{- end}}
@@ -55,11 +65,11 @@ metadata:
   name: {{.Name}}
   namespace: {{.Namespace}}
   labels:
-    app: {{.Name}}
+    app: {{.App}}
     origin: msdgen
 spec:
   selector:
-    app: {{.Name}}
+    svc: {{.Name}}
   ports:
     - protocol: TCP
       port: 80

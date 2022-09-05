@@ -11,6 +11,7 @@ import (
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
 
 	rands "github.com/xyproto/randomstring"
+	_ "go.uber.org/automaxprocs"
 )
 
 func startQuery(ctx context.Context, c *service.RemoteClient, uploadReader *strings.Reader, interval time.Duration) <-chan struct{} {
@@ -63,7 +64,8 @@ func main() {
 			uploadReader = strings.NewReader(rands.HumanFriendlyEnglishString(opts.UploadSize))
 		}
 
-		waitingList[i] = startQuery(ctx, service.NewClient(opts), uploadReader, queryInterval)
+		client := service.NewClient(opts)
+		waitingList[i] = startQuery(ctx, &client, uploadReader, queryInterval)
 	}
 
 	for i := range waitingList {

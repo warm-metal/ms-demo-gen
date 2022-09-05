@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
 	"strings"
@@ -19,8 +20,11 @@ type Service struct {
 
 	Name        string
 	Namespace   string
+	App         string
 	NumReplicas int
 	Image       string
+	CPURequest  string
+	CPULimit    string
 }
 
 func (s Service) JoinUpstreams() string {
@@ -43,6 +47,10 @@ func (s Service) LongConnInInt() int {
 	}
 }
 
+func (s Service) HasResourceConstraints() bool {
+	return len(s.CPULimit) > 0 || len(s.CPURequest) > 0
+}
+
 type TrafficGenOptions struct {
 	NumConcurrentProc int
 	QueryInterval     time.Duration
@@ -56,6 +64,8 @@ type Options struct {
 	Namespaces         []string
 	ReplicaNumberRange [2]int
 	Image              string
+	CPURequest         string
+	CPULimit           string
 }
 
 func (o Options) Namespace() string {
@@ -82,7 +92,7 @@ func (o Options) NumReplicas() int {
 	return o.ReplicaNumberRange[0] + rand.Intn(o.ReplicaNumberRange[1]-o.ReplicaNumberRange[0])
 }
 
-func (o Options) NewService(id int64) *Service {
+func (o Options) NewService(id int64, app string) *Service {
 	name := "gateway"
 	if id > 1 {
 		name = rands.HumanFriendlyEnglishString(10)
@@ -93,20 +103,24 @@ func (o Options) NewService(id int64) *Service {
 		TrafficGenOptions: o.TrafficGenOptions,
 		Name:              name,
 		Namespace:         o.Namespace(),
+		App:               app,
 		NumReplicas:       o.NumReplicas(),
 		Image:             o.Image,
+		CPURequest:        o.CPURequest,
+		CPULimit:          o.CPULimit,
 	}
 }
 
 func GenForK8s(g graph.Directed, opts *Options) {
 	opts.Address = ":80"
 	it := g.Nodes()
+	app := fmt.Sprintf("msd%d-%s", it.Len(), rands.HumanFriendlyEnglishString(5))
 	serviceMap := make(map[int64]*Service, it.Len())
 	for it.Next() {
 		from := it.Node()
 		fromService := serviceMap[from.ID()]
 		if fromService == nil {
-			fromService = opts.NewService(from.ID())
+			fromService = opts.NewService(from.ID(), app)
 			serviceMap[from.ID()] = fromService
 		}
 
@@ -115,7 +129,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 			to := targets.Node()
 			toService := serviceMap[to.ID()]
 			if toService == nil {
-				toService = opts.NewService(to.ID())
+				toService = opts.NewService(to.ID(), app)
 				serviceMap[to.ID()] = toService
 			}
 			fromService.Upstream = append(fromService.Upstream, toService.Name)
@@ -134,7 +148,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 	}
 
 	deploymentTmpl := template.Must(template.New("deploy").Parse(deployTemplate))
-	trafficGen := opts.NewService(int64(len(serviceMap) + 1))
+	trafficGen := opts.NewService(int64(len(serviceMap)+1), app)
 	trafficGen.Name = "traffic-generator"
 	trafficGen.NumReplicas = 1
 	trafficGen.Image = "docker.io/warmmetal/ms-demo-traffic:latest"
