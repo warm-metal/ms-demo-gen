@@ -41,9 +41,22 @@ func TestManifestGeneration(t *testing.T) {
 		Namespaces:         []string{"ms", "ms2", "ms3"},
 		ReplicaNumberRange: [2]int{1, 3},
 		Image:              "docker.io/warmmetal/ms-demo-service:latest",
-		CPURequest:         "1000m",
-		CPULimit:           "1000m",
 	}
+	manifest.GenForK8s(g, manifestOpts)
+	t.Log(s.String())
+
+	manifestOpts.CPURequest = "500m"
+	manifestOpts.CPULimit = "500m"
+	manifest.GenForK8s(g, manifestOpts)
+	t.Log(s.String())
+
+	manifestOpts.CPURequest = "500m"
+	manifestOpts.CPULimit = ""
+	manifest.GenForK8s(g, manifestOpts)
+	t.Log(s.String())
+
+	manifestOpts.CPULimit = "500m"
+	manifestOpts.CPURequest = ""
 	manifest.GenForK8s(g, manifestOpts)
 	t.Log(s.String())
 }

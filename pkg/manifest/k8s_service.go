@@ -45,14 +45,10 @@ spec:
 {{- else}}
 {{- if .HasResourceConstraints}}
         resources:
-{{- if .CPURequest}}
           requests:
             cpu: "{{.CPURequest}}"
-{{- end}}
-{{- if .CPULimit}}
           limits:
             cpu: "{{.CPULimit}}"
-{{- end}}
 {{- end}}
         ports:
         - containerPort: 80

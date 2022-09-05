@@ -23,8 +23,8 @@ type Service struct {
 	App         string
 	NumReplicas int
 	Image       string
-	CPURequest  string
-	CPULimit    string
+	cpuRequest  string
+	cpuLimit    string
 }
 
 func (s Service) JoinUpstreams() string {
@@ -48,7 +48,31 @@ func (s Service) LongConnInInt() int {
 }
 
 func (s Service) HasResourceConstraints() bool {
-	return len(s.CPULimit) > 0 || len(s.CPURequest) > 0
+	return len(s.cpuLimit) > 0 || len(s.cpuRequest) > 0
+}
+
+func (s Service) CPURequest() string {
+	if len(s.cpuRequest) > 0 {
+		return s.cpuRequest
+	}
+
+	if len(s.cpuLimit) > 0 {
+		return "0"
+	}
+
+	panic("unreached")
+}
+
+func (s Service) CPULimit() string {
+	if len(s.cpuLimit) > 0 {
+		return s.cpuLimit
+	}
+
+	if len(s.cpuRequest) > 0 {
+		return s.cpuRequest
+	}
+
+	panic("unreached")
 }
 
 type TrafficGenOptions struct {
@@ -106,8 +130,8 @@ func (o Options) NewService(id int64, app string) *Service {
 		App:               app,
 		NumReplicas:       o.NumReplicas(),
 		Image:             o.Image,
-		CPURequest:        o.CPURequest,
-		CPULimit:          o.CPULimit,
+		cpuRequest:        o.CPURequest,
+		cpuLimit:          o.CPULimit,
 	}
 }
 
