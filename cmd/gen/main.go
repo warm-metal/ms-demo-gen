@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -51,20 +52,21 @@ func main() {
 		LongestWalk:    *longestCallChain,
 	})
 
+	app := fmt.Sprintf("msd%d-%s", *numServices, rands.HumanFriendlyEnglishString(5))
 	if *alsoOutputTopology {
-		dotBin, err := dot.Marshal(g, "", "", "")
+		dotBin, err := dot.Marshal(g, app, "", "")
 		if err != nil {
 			panic(err)
 		}
 
-		if err = ioutil.WriteFile(filepath.Join(*outputDir, "ws-demo.dot"), dotBin, 0755); err != nil {
+		if err = ioutil.WriteFile(filepath.Join(*outputDir, fmt.Sprintf("topology-%s.dot", app)), dotBin, 0755); err != nil {
 			panic(err)
 		}
 	}
 
 	var out io.WriteCloser
 	if len(*outputDir) > 0 {
-		out, err := os.Create(filepath.Join(*outputDir, "manifests.yaml"))
+		out, err := os.Create(filepath.Join(*outputDir, fmt.Sprintf("manifests-%s.yaml", app)))
 		if err != nil {
 			panic(err)
 		}
@@ -93,5 +95,6 @@ func main() {
 		Image:              *image,
 		CPURequest:         *cpuRequest,
 		CPULimit:           *cpuLimit,
+		App:                app,
 	})
 }

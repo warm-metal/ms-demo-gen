@@ -1,7 +1,6 @@
 package manifest
 
 import (
-	"fmt"
 	"io"
 	"math/rand"
 	"strings"
@@ -90,6 +89,7 @@ type Options struct {
 	Image              string
 	CPURequest         string
 	CPULimit           string
+	App                string
 }
 
 func (o Options) Namespace() string {
@@ -116,7 +116,7 @@ func (o Options) NumReplicas() int {
 	return o.ReplicaNumberRange[0] + rand.Intn(o.ReplicaNumberRange[1]-o.ReplicaNumberRange[0])
 }
 
-func (o Options) NewService(id int64, app string) *Service {
+func (o Options) NewService(id int64) *Service {
 	name := "gateway"
 	if id > 1 {
 		name = rands.HumanFriendlyEnglishString(10)
@@ -127,7 +127,7 @@ func (o Options) NewService(id int64, app string) *Service {
 		TrafficGenOptions: o.TrafficGenOptions,
 		Name:              name,
 		Namespace:         o.Namespace(),
-		App:               app,
+		App:               o.App,
 		NumReplicas:       o.NumReplicas(),
 		Image:             o.Image,
 		cpuRequest:        o.CPURequest,
@@ -138,13 +138,12 @@ func (o Options) NewService(id int64, app string) *Service {
 func GenForK8s(g graph.Directed, opts *Options) {
 	opts.Address = ":80"
 	it := g.Nodes()
-	app := fmt.Sprintf("msd%d-%s", it.Len(), rands.HumanFriendlyEnglishString(5))
 	serviceMap := make(map[int64]*Service, it.Len())
 	for it.Next() {
 		from := it.Node()
 		fromService := serviceMap[from.ID()]
 		if fromService == nil {
-			fromService = opts.NewService(from.ID(), app)
+			fromService = opts.NewService(from.ID())
 			serviceMap[from.ID()] = fromService
 		}
 
@@ -153,7 +152,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 			to := targets.Node()
 			toService := serviceMap[to.ID()]
 			if toService == nil {
-				toService = opts.NewService(to.ID(), app)
+				toService = opts.NewService(to.ID())
 				serviceMap[to.ID()] = toService
 			}
 			fromService.Upstream = append(fromService.Upstream, toService.Name)
@@ -172,7 +171,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 	}
 
 	deploymentTmpl := template.Must(template.New("deploy").Parse(deployTemplate))
-	trafficGen := opts.NewService(int64(len(serviceMap)+1), app)
+	trafficGen := opts.NewService(int64(len(serviceMap) + 1))
 	trafficGen.Name = "traffic-generator"
 	trafficGen.NumReplicas = 1
 	trafficGen.Image = "docker.io/warmmetal/ms-demo-traffic:latest"
