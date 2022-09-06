@@ -4,6 +4,10 @@ It creates k8s manifests in a yaml file and optionaly a DOT file which contains 
 
 MSDGen is built for service mesh testing.
 
+## msd10
+<img src="https://github.com/warm-metal/ms-demo-gen/blob/main/.res/topology.png?raw=true" />
+<img src="https://github.com/warm-metal/ms-demo-gen/blob/main/.res/kiali.png?raw=true" width="555" />
+
 ## Usage
 We have pre-built binaries for MacOS, Linux and Windows on amd64 architecture.
 You can download them in the release page. 
