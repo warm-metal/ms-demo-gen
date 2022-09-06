@@ -6,7 +6,7 @@ MSDGen is built for service mesh testing.
 
 ## msd10
 <img src="https://github.com/warm-metal/ms-demo-gen/blob/main/.res/topology.png?raw=true" />
-<img src="https://github.com/warm-metal/ms-demo-gen/blob/main/.res/kiali.png?raw=true" width="555" />
+<img src="https://github.com/warm-metal/ms-demo-gen/blob/main/.res/kiali.png?raw=true" width="700" />
 
 ## Usage
 We have pre-built binaries for MacOS, Linux and Windows on amd64 architecture.
