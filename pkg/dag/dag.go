@@ -6,6 +6,8 @@ import (
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/encoding"
 	"gonum.org/v1/gonum/graph/simple"
+
+	rands "github.com/xyproto/randomstring"
 )
 
 type Options struct {
@@ -19,27 +21,39 @@ type Service struct {
 	id        int64
 	outDegree int
 	depth     int
+	name      string
 }
 
 func (s *Service) ID() int64 {
 	return s.id
 }
 
+func (s *Service) DOTID() string {
+	return s.name
+}
+
 func (s *Service) IsRoot() bool {
 	return s.id == 1
 }
 
-func (s *Service) DOTAttributers() (graph, node, edge encoding.Attributer) {
-	return nil, &encoding.Attributes{
-		{
-			Key:   "svc",
-			Value: "a",
-		},
-		{
-			Key:   "svc",
-			Value: "b",
-		},
-	}, nil
+func createService(id int64) *Service {
+	name := "gateway"
+	if id != 1 {
+		name = rands.HumanFriendlyEnglishString(10)
+	}
+	return &Service{
+		id:   id,
+		name: name,
+	}
+}
+
+type ServiceGraph struct {
+	*simple.DirectedGraph
+}
+
+func (s *ServiceGraph) DOTAttributers() (graph, node, edge encoding.Attributer) {
+	return &encoding.Attributes{{Key: "rankdir", Value: `"LR"`}},
+		&encoding.Attributes{{Key: "shape", Value: "box"}}, nil
 }
 
 func calcVerticesHaveOutDegrees(vertices []*Service, upperBoundOutDegree, maxDepth int) []*Service {
@@ -78,10 +92,13 @@ func selectVerticesRandomly(vertices []*Service, numTargts int) []*Service {
 }
 
 func New(opts *Options) graph.Directed {
-	g := simple.NewDirectedGraph()
+	g := &ServiceGraph{
+		DirectedGraph: simple.NewDirectedGraph(),
+	}
+
 	vertices := make([]*Service, opts.NumberVertices)
 	for i := 1; i <= opts.NumberVertices; i++ {
-		vertex := &Service{id: int64(i)}
+		vertex := createService(int64(i))
 		vertices[i-1] = vertex
 		if vertex.IsRoot() {
 			g.AddNode(vertex)

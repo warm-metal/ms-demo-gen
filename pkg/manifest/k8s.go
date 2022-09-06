@@ -9,8 +9,7 @@ import (
 
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
 	"gonum.org/v1/gonum/graph"
-
-	rands "github.com/xyproto/randomstring"
+	"gonum.org/v1/gonum/graph/encoding/dot"
 )
 
 type Service struct {
@@ -116,10 +115,18 @@ func (o Options) NumReplicas() int {
 	return o.ReplicaNumberRange[0] + rand.Intn(o.ReplicaNumberRange[1]-o.ReplicaNumberRange[0])
 }
 
-func (o Options) NewService(id int64) *Service {
-	name := "gateway"
-	if id > 1 {
-		name = rands.HumanFriendlyEnglishString(10)
+func (o Options) NewService(node graph.Node) *Service {
+	// name := "gateway"
+	// if id > 1 {
+	// 	name = rands.HumanFriendlyEnglishString(10)
+	// }
+	var name string
+	if node != nil {
+		if n, ok := node.(dot.Node); ok {
+			name = n.DOTID()
+		} else {
+			panic("unknown node")
+		}
 	}
 
 	return &Service{
@@ -143,7 +150,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 		from := it.Node()
 		fromService := serviceMap[from.ID()]
 		if fromService == nil {
-			fromService = opts.NewService(from.ID())
+			fromService = opts.NewService(from)
 			serviceMap[from.ID()] = fromService
 		}
 
@@ -152,7 +159,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 			to := targets.Node()
 			toService := serviceMap[to.ID()]
 			if toService == nil {
-				toService = opts.NewService(to.ID())
+				toService = opts.NewService(to)
 				serviceMap[to.ID()] = toService
 			}
 			fromService.Upstream = append(fromService.Upstream, toService.Name)
@@ -171,7 +178,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 	}
 
 	deploymentTmpl := template.Must(template.New("deploy").Parse(deployTemplate))
-	trafficGen := opts.NewService(int64(len(serviceMap) + 1))
+	trafficGen := opts.NewService(nil)
 	trafficGen.Name = "traffic-generator"
 	trafficGen.NumReplicas = 1
 	trafficGen.Image = "docker.io/warmmetal/ms-demo-traffic:latest"

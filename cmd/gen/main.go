@@ -77,6 +77,11 @@ func main() {
 
 	payloadZ := resource.MustParse(*payloadSize)
 	uploadZ := resource.MustParse(*uploadSize)
+	var namespaces []string
+	if len(*targetNamespaces) > 0 {
+		namespaces = strings.Split(*targetNamespaces, ",")
+	}
+
 	manifest.GenForK8s(g, &manifest.Options{
 		Options: service.Options{
 			PayloadSize:     int(payloadZ.Value()),
@@ -90,7 +95,7 @@ func main() {
 			QueryInterval:     *trafficGenQueryInterval,
 		},
 		Output:             out,
-		Namespaces:         strings.Split(*targetNamespaces, ","),
+		Namespaces:         namespaces,
 		ReplicaNumberRange: [2]int{1, *maxReplicas},
 		Image:              *image,
 		CPURequest:         *cpuRequest,
