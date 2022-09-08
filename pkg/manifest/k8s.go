@@ -234,7 +234,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 	trafficGen.NumVersions = 1
 	trafficGen.NumReplicas = 1
 	trafficGen.Image = "docker.io/warmmetal/ms-demo-traffic:latest"
-	trafficGen.Upstream = []string{versionMap[1].Name}
+	trafficGen.Upstream = []string{versionMap[1].App}
 	trafficGen.PayloadSize = -1
 	trafficGen.Address = ""
 	if err := deploymentTmpl.Execute(opts.Output, trafficGen); err != nil {
