@@ -6,17 +6,20 @@ metadata:
   name: {{.Name}}
   namespace: {{.Namespace}}
   labels:
-    app: {{.Name}}
+    app: {{.App}}
+    version: {{.Version}}
     origin: msdgen
 spec:
   replicas: {{.NumReplicas}}
   selector:
     matchLabels:
-      app: {{.Name}}
+      app: {{.App}}
+      version: {{.Version}}
   template:
     metadata:
       labels:
-        app: {{.Name}}
+        app: {{.App}}
+        version: {{.Version}}
         origin: msdgen
     spec:
       containers:
@@ -58,14 +61,14 @@ spec:
 const serviceTemplate = `apiVersion: v1
 kind: Service
 metadata:
-  name: {{.Name}}
+  name: {{.App}}
   namespace: {{.Namespace}}
   labels:
-    app: {{.Name}}
+    app: {{.App}}
     origin: msdgen
 spec:
   selector:
-    app: {{.Name}}
+    app: {{.App}}
   ports:
     - protocol: TCP
       port: 80

@@ -25,6 +25,7 @@ func TestManifestGeneration(t *testing.T) {
 		NumberVertices: 3,
 		InDegreeRange:  [2]int{1, 2},
 		OutDegreeRange: [2]int{0, 2},
+		NumberVersionsRange: [2]int{1, 2},
 		LongestWalk:    3,
 	}
 

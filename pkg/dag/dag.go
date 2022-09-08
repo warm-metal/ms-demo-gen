@@ -23,7 +23,9 @@ type Service struct {
 	id        int64
 	outDegree int
 	depth     int
-	name      string
+	versions  int
+	app       string
+	version   string
 }
 
 func (s *Service) ID() int64 {
@@ -31,11 +33,19 @@ func (s *Service) ID() int64 {
 }
 
 func (s *Service) DOTID() string {
-	return s.name
+	return fmt.Sprintf("%s-%s", s.app, s.version)
 }
 
 func (s *Service) IsRoot() bool {
 	return s.id == 1
+}
+
+func (s *Service) Attributes() []encoding.Attribute {
+	return []encoding.Attribute{
+		{Key: "app", Value: s.app},
+		{Key: "version", Value: s.version},
+		{Key: "versions", Value: fmt.Sprintf("%d", s.versions)},
+	}
 }
 
 func createServices(id int64, numVersions int) (nextID int64, svcs []Service) {
@@ -47,8 +57,10 @@ func createServices(id int64, numVersions int) (nextID int64, svcs []Service) {
 	nextID = id
 	for i := 0; i < numVersions; i++ {
 		svcs[i] = Service{
-			id:   nextID,
-			name: fmt.Sprintf("%s-v%d", name, i+1),
+			id:       nextID,
+			app:      name,
+			version:  fmt.Sprintf("v%d", i+1),
+			versions: numVersions,
 		}
 		nextID++
 	}
