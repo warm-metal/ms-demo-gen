@@ -204,7 +204,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 				toService = opts.NewService(to)
 				versionMap[to.ID()] = toService
 			}
-			fromService.Upstream = append(fromService.Upstream, toService.Name)
+			fromService.Upstream = append(fromService.Upstream, toService.App)
 		}
 	}
 
