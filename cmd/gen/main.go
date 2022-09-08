@@ -25,6 +25,7 @@ var (
 	maxCaller               = flag.Int("max-downstream", 2, "Maximum number of callers for each service except the root service")
 	maxCallee               = flag.Int("max-upstream", 3, "Maximum number of callees for each service except leaf services")
 	maxReplicas             = flag.Int("max-replicas", 1, "Maximum number of replicas")
+	maxVersions             = flag.Int("max-versions", 1, "Maximum number of versions for each service")
 	longestCallChain        = flag.Int("longest-call-chain", -1, "Number of services in the longest call chain. -1 means not limit")
 	outputDir               = flag.String("out", "", "The directory to where manifests to be generated. Manifests will be printed in the console if not specified.")
 	targetNamespaces        = flag.String("namespaces", "", "Namespaces where workloads to be deployed. Multiple namespaces should be seperated by a comma(,). You need to create those namespaces manually.")
@@ -46,10 +47,11 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
 	g := dag.New(&dag.Options{
-		NumberVertices: *numServices,
-		InDegreeRange:  [2]int{1, *maxCaller},
-		OutDegreeRange: [2]int{0, *maxCallee},
-		LongestWalk:    *longestCallChain,
+		NumberVertices:      *numServices,
+		InDegreeRange:       [2]int{1, *maxCaller},
+		OutDegreeRange:      [2]int{0, *maxCallee},
+		NumberVersionsRange: [2]int{1, *maxVersions},
+		LongestWalk:         *longestCallChain,
 	})
 
 	app := fmt.Sprintf("msd%d-%s", *numServices, rands.HumanFriendlyEnglishString(5))
@@ -100,6 +102,5 @@ func main() {
 		Image:              *image,
 		CPURequest:         *cpuRequest,
 		CPULimit:           *cpuLimit,
-		App:                app,
 	})
 }

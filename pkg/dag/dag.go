@@ -1,6 +1,7 @@
 package dag
 
 import (
+	"fmt"
 	"math/rand"
 
 	"gonum.org/v1/gonum/graph"
@@ -11,10 +12,11 @@ import (
 )
 
 type Options struct {
-	NumberVertices int
-	InDegreeRange  [2]int
-	OutDegreeRange [2]int
-	LongestWalk    int
+	NumberVertices      int
+	InDegreeRange       [2]int
+	OutDegreeRange      [2]int
+	NumberVersionsRange [2]int
+	LongestWalk         int
 }
 
 type Service struct {
@@ -36,15 +38,21 @@ func (s *Service) IsRoot() bool {
 	return s.id == 1
 }
 
-func createService(id int64) *Service {
+func createServices(id int64, numVersions int) (nextID int64, svcs []Service) {
 	name := "gateway"
 	if id != 1 {
 		name = rands.HumanFriendlyEnglishString(10)
 	}
-	return &Service{
-		id:   id,
-		name: name,
+	svcs = make([]Service, numVersions)
+	nextID = id
+	for i := 0; i < numVersions; i++ {
+		svcs[i] = Service{
+			id:   nextID,
+			name: fmt.Sprintf("%s-v%d", name, i+1),
+		}
+		nextID++
 	}
+	return
 }
 
 type ServiceGraph struct {
@@ -56,10 +64,11 @@ func (s *ServiceGraph) DOTAttributers() (graph, node, edge encoding.Attributer) 
 		&encoding.Attributes{{Key: "shape", Value: "box"}}, nil
 }
 
-func calcVerticesHaveOutDegrees(vertices []*Service, upperBoundOutDegree, maxDepth int) []*Service {
+func calcVerticesHaveOutDegrees(vertices []Service, upperBoundOutDegree, maxDepth int) []*Service {
 	maxDepth -= 1
 	available := make([]*Service, 0, len(vertices))
-	for _, v := range vertices {
+	for i := range vertices {
+		v := &vertices[i]
 		if v.outDegree > upperBoundOutDegree {
 			panic(vertices)
 		}
@@ -96,49 +105,65 @@ func New(opts *Options) graph.Directed {
 		DirectedGraph: simple.NewDirectedGraph(),
 	}
 
-	vertices := make([]*Service, opts.NumberVertices)
+	vertices := make([]Service, 0, opts.NumberVertices*opts.NumberVersionsRange[1])
+	nextVertexID := int64(1)
+
 	for i := 1; i <= opts.NumberVertices; i++ {
-		vertex := createService(int64(i))
-		vertices[i-1] = vertex
-		if vertex.IsRoot() {
-			g.AddNode(vertex)
-			continue
-		}
-
-		availableVertices := calcVerticesHaveOutDegrees(vertices[:i-1], opts.OutDegreeRange[1], opts.LongestWalk)
-		// FIXME remove redundant walk paths.
-		if len(availableVertices) == 0 {
-			panic("all vertices have no more out degrees")
-		}
-
-		upperBoundInDegree := opts.InDegreeRange[1]
-		if len(availableVertices) < upperBoundInDegree {
-			upperBoundInDegree = len(availableVertices)
-		}
-
-		if upperBoundInDegree < opts.InDegreeRange[0] {
-			panic("upperBoundInDegree is lower than the lower bound")
-		}
-
-		inDegree := 0
-		if upperBoundInDegree == opts.InDegreeRange[0] {
-			inDegree = upperBoundInDegree
-		} else {
-			inDegree = rand.Intn(upperBoundInDegree-opts.InDegreeRange[0]) + opts.InDegreeRange[0]
-		}
-
-		fromVertices := selectVerticesRandomly(availableVertices, inDegree)
-		if len(fromVertices) == 0 {
-			panic(`no source vertex found for target vertex`)
-		}
-		for _, v := range fromVertices {
-			v.outDegree += 1
-			depth := v.depth + 1
-			if depth > vertex.depth {
-				vertex.depth = depth
+		var fromVertices []*Service
+		if len(vertices) > 0 {
+			availableVertices := calcVerticesHaveOutDegrees(vertices, opts.OutDegreeRange[1], opts.LongestWalk)
+			if len(availableVertices) == 0 {
+				panic(fmt.Sprint(vertices))
 			}
 
-			g.SetEdge(g.NewEdge(v, vertex))
+			upperBoundInDegree := opts.InDegreeRange[1]
+			if len(availableVertices) < upperBoundInDegree {
+				upperBoundInDegree = len(availableVertices)
+			}
+
+			if upperBoundInDegree < opts.InDegreeRange[0] {
+				panic("upperBoundInDegree is lower than the lower bound")
+			}
+
+			inDegree := 0
+			if upperBoundInDegree == opts.InDegreeRange[0] {
+				inDegree = upperBoundInDegree
+			} else {
+				// Plusing 1 to include the upper bound
+				inDegree = rand.Intn(upperBoundInDegree-opts.InDegreeRange[0]+1) + opts.InDegreeRange[0]
+			}
+
+			fromVertices = selectVerticesRandomly(availableVertices, inDegree)
+			if len(fromVertices) == 0 {
+				panic(`no source vertex found for target vertex`)
+			}
+		}
+
+		versions := 1
+		if len(vertices) > 0 {
+			if opts.NumberVersionsRange[0] == opts.NumberVersionsRange[1] {
+				versions = opts.NumberVersionsRange[0]
+			} else {
+				versions = rand.Intn(opts.NumberVersionsRange[1]-opts.NumberVersionsRange[0]+1) + opts.NumberVersionsRange[0]
+			}
+		}
+
+		var newVertices []Service
+		nextVertexID, newVertices = createServices(nextVertexID, versions)
+		newVertexIndex := len(vertices)
+		vertices = append(vertices, newVertices...)
+
+		for _, v := range fromVertices {
+			v.outDegree += 1
+			for ; newVertexIndex < len(vertices); newVertexIndex++ {
+				vertex := &vertices[newVertexIndex]
+				depth := v.depth + 1
+				if depth > vertex.depth {
+					vertex.depth = depth
+				}
+
+				g.SetEdge(g.NewEdge(v, vertex))
+			}
 		}
 	}
 

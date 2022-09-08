@@ -6,19 +6,17 @@ metadata:
   name: {{.Name}}
   namespace: {{.Namespace}}
   labels:
-    app: {{.App}}
+    app: {{.Name}}
     origin: msdgen
 spec:
   replicas: {{.NumReplicas}}
   selector:
     matchLabels:
-      app: {{.App}}
-      svc: {{.Name}}
+      app: {{.Name}}
   template:
     metadata:
       labels:
-        app: {{.App}}
-        svc: {{.Name}}
+        app: {{.Name}}
         origin: msdgen
     spec:
       containers:
@@ -63,11 +61,11 @@ metadata:
   name: {{.Name}}
   namespace: {{.Namespace}}
   labels:
-    app: {{.App}}
+    app: {{.Name}}
     origin: msdgen
 spec:
   selector:
-    svc: {{.Name}}
+    app: {{.Name}}
   ports:
     - protocol: TCP
       port: 80

@@ -134,7 +134,6 @@ func (o Options) NewService(node graph.Node) *Service {
 		TrafficGenOptions: o.TrafficGenOptions,
 		Name:              name,
 		Namespace:         o.Namespace(),
-		App:               o.App,
 		NumReplicas:       o.NumReplicas(),
 		Image:             o.Image,
 		cpuRequest:        o.CPURequest,
