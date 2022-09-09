@@ -21,31 +21,40 @@ import (
 )
 
 var (
-	numServices             = flag.Int("services", 10, "Number of services in the demo")
-	maxCaller               = flag.Int("max-downstream", 2, "Maximum number of callers for each service except the root service")
-	maxCallee               = flag.Int("max-upstream", 3, "Maximum number of callees for each service except leaf services")
-	maxReplicas             = flag.Int("max-replicas", 1, "Maximum number of replicas")
-	maxVersions             = flag.Int("max-versions", 2, "Maximum number of versions for each service")
-	longestCallChain        = flag.Int("longest-call-chain", -1, "Number of services in the longest call chain. -1 means not limit")
-	outputDir               = flag.String("out", "", "The directory to where manifests to be generated. Manifests will be printed in the console if not specified.")
-	targetNamespaces        = flag.String("namespaces", "", "Namespaces where workloads to be deployed. Multiple namespaces should be seperated by a comma(,). You need to create those namespaces manually.")
-	image                   = flag.String("image", "docker.io/warmmetal/ms-demo-service:latest", "Image for each workload")
-	alsoOutputTopology      = flag.Bool("gen-topology", true, "Output the topology in a DOT file.")
-	payloadSize             = flag.String("payload-size", "64", "The payload size of each backend. Such as 10Ki, 1Mi")
-	uploadSize              = flag.String("upload-size", "0", "The uploaded data size of each request. Such as 1Ki. If it is greater than 0, POST requests are issued, otherwize, GET requests instead. ")
-	clientSideTimeout       = flag.Duration("timeout", 0, "Client side timeout in time.Duration. 0 means never expire.")
-	QueryInParallel         = flag.Bool("parallel", false, "If true, requests to all upstreams are issued at the same time. Otherwise, in the given order.")
-	longConn                = flag.Bool("long", false, "If true, clients will use same L4 connection for precedure requests of the same upstream. Otherwise, build a new connection for each request.")
-	numTrafficGenProc       = flag.Int("traffic-gen-proc", 1, "Number of concurrent processors per upstream")
-	trafficGenQueryInterval = flag.Duration("traffic-gen-query-interval", time.Second, "Interval between queries of traffic generator.")
-	cpuRequest              = flag.String("service-cpu-request", "", "CPU fragments requested for each service.")
-	cpuLimit                = flag.String("service-cpu-limit", "", "CPU fragments limited for each service.")
+	numServices             = flag.Int("services", 10, "Number of services to be generated")
+	maxCaller               = flag.Int("max-downstream", 2, "Maximum number of downstream services of each service")
+	maxCallee               = flag.Int("max-upstream", 3, "Maximum number of upstream services of each service")
+	maxReplicas             = flag.Int("max-replicas", 1, "Maximum number of workload replicas for each service")
+	maxVersions             = flag.Int("max-versions", 2, "Maximum number of versions of each service")
+	longestCallChain        = flag.Int("longest-call-chain", -1, "Number of services in the longest call chain. -1 means no limit")
+	outputDir               = flag.String("o", "", "The directory to where manifests to be generated. The default output position is stdout.")
+	targetNamespaces        = flag.String("namespaces", "", "Namespaces where workloads to be deployed. Multiple namespaces should be seperated by comma(,). and namespaces should be created manually.")
+	image                   = flag.String("image", "docker.io/warmmetal/ms-demo-service:latest", "Image for workloads")
+	alsoOutputTopology      = flag.Bool("gen-connectivity", true, "Generate connectivity layout in a DOT file.")
+	payloadSize             = flag.String("payload-size", "64", "The payload size of a single query. Such as 10Ki, 1Mi")
+	uploadSize              = flag.String("upload-size", "0", "The uploading data size of a single request. Such as 1Ki. If greater than 0, POST requests are issued. Otherwize, GET queries instead.")
+	clientSideTimeout       = flag.Duration("timeout", 0, "Client side timeout in time.Duration. 0 means never expired.")
+	QueryInParallel         = flag.Bool("parallel", false, "If true, requests to all upstreams are issued concurrently. Otherwise, in the order of upstream setting.")
+	longConn                = flag.Bool("long", false, "If true, all queries to the same upstream share the same L4 connection. Otherwise, a particular connection for a single request.")
+	numTrafficGenProc       = flag.Int("traffic-gen-proc", 1, "Number of concurrent processors in the traffic generator.")
+	trafficGenQueryInterval = flag.Duration("traffic-gen-query-interval", time.Second, "Interval between queries of the traffic generator.")
+	cpuRequest              = flag.String("service-cpu-request", "", "CPU requested for each service.")
+	cpuLimit                = flag.String("service-cpu-limit", "", "CPU limited for each service.")
+	showVersion             = flag.Bool("v", false, "Show the current version")
+
+	Version = ""
 )
 
 func main() {
 	rands.Seed()
 	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(Version)
+		return
+	}
+
 	g := dag.New(&dag.Options{
 		NumberVertices:      *numServices,
 		InDegreeRange:       [2]int{1, *maxCaller},
@@ -61,7 +70,7 @@ func main() {
 			panic(err)
 		}
 
-		if err = ioutil.WriteFile(filepath.Join(*outputDir, fmt.Sprintf("topology-%s.dot", app)), dotBin, 0755); err != nil {
+		if err = ioutil.WriteFile(filepath.Join(*outputDir, fmt.Sprintf("connectivity-layout-%s.dot", app)), dotBin, 0755); err != nil {
 			panic(err)
 		}
 	}
