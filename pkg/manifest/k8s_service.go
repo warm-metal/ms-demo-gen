@@ -3,23 +3,23 @@ package manifest
 const deployTemplate = `apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{.Name}}
-  namespace: {{.Namespace}}
+  name: "{{.Name}}"
+  namespace: "{{.Namespace}}"
   labels:
-    app: {{.App}}
-    version: {{.Version}}
+    app: "{{.App}}"
+    version: "{{.Version}}"
     origin: msdgen
 spec:
   replicas: {{.NumReplicas}}
   selector:
     matchLabels:
-      app: {{.App}}
-      version: {{.Version}}
+      app: "{{.App}}"
+      version: "{{.Version}}"
   template:
     metadata:
       labels:
-        app: {{.App}}
-        version: {{.Version}}
+        app: "{{.App}}"
+        version: "{{.Version}}"
         origin: msdgen
     spec:
       containers:
@@ -61,14 +61,14 @@ spec:
 const serviceTemplate = `apiVersion: v1
 kind: Service
 metadata:
-  name: {{.App}}
-  namespace: {{.Namespace}}
+  name: "{{.App}}"
+  namespace: "{{.Namespace}}"
   labels:
-    app: {{.App}}
-    origin: msdgen
+    app: "{{.App}}"
+    origin: "msdgen"
 spec:
   selector:
-    app: {{.App}}
+    app: "{{.App}}"
   ports:
     - protocol: TCP
       port: 80

@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
 	"strconv"
@@ -215,7 +216,7 @@ func GenForK8s(g graph.Directed, opts *Options) {
 				toService = opts.NewService(to)
 				versionMap[to.ID()] = toService
 			}
-			fromService.Upstream = append(fromService.Upstream, toService.App)
+			fromService.Upstream = append(fromService.Upstream, fmt.Sprintf("%s.%s", toService.App, toService.Namespace))
 		}
 	}
 
@@ -224,20 +225,22 @@ func GenForK8s(g graph.Directed, opts *Options) {
 
 	const GatewayApp = "gateway"
 	gatewayOutput := opts.OutputForVersions(1)[0]
-	if err := deploymentTmpl.Execute(gatewayOutput, versionMap[serviceMap[GatewayApp][0]]); err != nil {
+	gatewaySvc := versionMap[serviceMap[GatewayApp][0]]
+	if err := deploymentTmpl.Execute(gatewayOutput, gatewaySvc); err != nil {
 		panic(err)
 	}
-	if err := serviceTmpl.Execute(gatewayOutput, versionMap[serviceMap[GatewayApp][0]]); err != nil {
+	if err := serviceTmpl.Execute(gatewayOutput, gatewaySvc); err != nil {
 		panic(err)
 	}
 	trafficGen := opts.NewService(nil)
 	trafficGen.Name = "traffic-generator"
+	trafficGen.Namespace = gatewaySvc.Namespace
 	trafficGen.App = trafficGen.Name
 	trafficGen.Version = "v1"
 	trafficGen.NumVersions = 1
 	trafficGen.NumReplicas = 1
 	trafficGen.Image = "docker.io/warmmetal/ms-demo-traffic:latest"
-	trafficGen.Upstream = []string{versionMap[1].App}
+	trafficGen.Upstream = []string{GatewayApp}
 	trafficGen.PayloadSize = -1
 	trafficGen.Address = ""
 	if err := deploymentTmpl.Execute(gatewayOutput, trafficGen); err != nil {
