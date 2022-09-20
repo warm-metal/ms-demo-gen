@@ -86,7 +86,7 @@ type Options struct {
 	TrafficGenOptions
 	service.Options
 
-	Output             io.Writer
+	Outputs            []io.Writer
 	Namespaces         []string
 	ReplicaNumberRange [2]int
 	Image              string
@@ -129,6 +129,17 @@ func (o Options) NumReplicas() int {
 	}
 
 	return o.ReplicaNumberRange[0] + rand.Intn(o.ReplicaNumberRange[1]-o.ReplicaNumberRange[0])
+}
+
+func (o Options) OutputForVersions(numVersions int) []io.Writer {
+	if len(o.Outputs) <= numVersions {
+		return o.Outputs
+	}
+
+	out := make([]io.Writer, len(o.Outputs))
+	copy(out, o.Outputs)
+	rand.Shuffle(len(out), func(i, j int) { out[i], out[j] = out[j], out[i] })
+	return out[:numVersions]
 }
 
 func parseIntOrDie(v string) (i int) {
@@ -211,22 +222,14 @@ func GenForK8s(g graph.Directed, opts *Options) {
 	deploymentTmpl := template.Must(template.New("deploy").Parse(deployTemplate))
 	serviceTmpl := template.Must(template.New("service").Parse(serviceTemplate))
 
-	for _, versions := range serviceMap {
-		for _, i := range versions {
-			s := versionMap[int64(i)]
-			if s == nil {
-				panic(i)
-			}
-			if err := deploymentTmpl.Execute(opts.Output, s); err != nil {
-				panic(err)
-			}
-		}
-
-		if err := serviceTmpl.Execute(opts.Output, versionMap[versions[0]]); err != nil {
-			panic(err)
-		}
+	const GatewayApp = "gateway"
+	gatewayOutput := opts.OutputForVersions(1)[0]
+	if err := deploymentTmpl.Execute(gatewayOutput, versionMap[serviceMap[GatewayApp][0]]); err != nil {
+		panic(err)
 	}
-
+	if err := serviceTmpl.Execute(gatewayOutput, versionMap[serviceMap[GatewayApp][0]]); err != nil {
+		panic(err)
+	}
 	trafficGen := opts.NewService(nil)
 	trafficGen.Name = "traffic-generator"
 	trafficGen.App = trafficGen.Name
@@ -237,7 +240,28 @@ func GenForK8s(g graph.Directed, opts *Options) {
 	trafficGen.Upstream = []string{versionMap[1].App}
 	trafficGen.PayloadSize = -1
 	trafficGen.Address = ""
-	if err := deploymentTmpl.Execute(opts.Output, trafficGen); err != nil {
+	if err := deploymentTmpl.Execute(gatewayOutput, trafficGen); err != nil {
 		panic(err)
+	}
+
+	delete(serviceMap, GatewayApp)
+	for _, versions := range serviceMap {
+		outputs := opts.OutputForVersions(len(versions))
+
+		for _, output := range outputs {
+			if err := serviceTmpl.Execute(output, versionMap[versions[0]]); err != nil {
+				panic(err)
+			}
+		}
+
+		for i, versionID := range versions {
+			s := versionMap[int64(versionID)]
+			if s == nil {
+				panic(versionID)
+			}
+			if err := deploymentTmpl.Execute(outputs[i%len(outputs)], s); err != nil {
+				panic(err)
+			}
+		}
 	}
 }

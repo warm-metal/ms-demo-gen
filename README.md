@@ -16,6 +16,7 @@ msdgen | kubectl apply -f-
 - [Adjusting service behaviors](#adjusting-service-behaviors)
 - [Changing size and connectivity](#changing-size-and-connectivity)
 - [Operating MSDn](#operating-msdn)
+- [Output options](#output-options)
 
 ## Getting binary
 
@@ -68,6 +69,12 @@ Even though, you can still rule the randomness of MSDGen.
 * `-max-downstream` sets the upperbound of the number of downstreams for each service.
 * `-longest-call-chain` limits the number of services through which a query may walk.
 If the topology of an MSDn can be a tree with the `gateway` service as its root, `-longest-call-chain` sets its height.
+
+## Output options
+MSDGen prints generated manifests to stdout by default.
+If you'd like to change the output position, the `-o` option can be used to set the target directory.
+Also, `-distributed-versions` defines the number of output files, and Versions of the same service will be distributed in those files randomly.
+This will be helpful in a multi-cluster environment.
 
 ## Operating MSDn
 MSDn is designed to use less CPU and memory, such that you can run a large scale of services on commodity computers.

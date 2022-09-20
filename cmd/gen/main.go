@@ -28,6 +28,7 @@ var (
 	maxVersions             = flag.Int("max-versions", 2, "Maximum number of versions of each service")
 	longestCallChain        = flag.Int("longest-call-chain", -1, "Number of services in the longest call chain. -1 means no limit")
 	outputDir               = flag.String("o", "", "The directory to where manifests to be generated. The default output position is stdout.")
+	distributedVersions     = flag.Int("distributed-versions", 1, "Number of output manifest files. Different versions of the same service will be distributed in those files randomly.")
 	targetNamespaces        = flag.String("namespaces", "", "Namespaces where workloads to be deployed. Multiple namespaces should be seperated by comma(,). and namespaces should be created manually.")
 	image                   = flag.String("image", "docker.io/warmmetal/ms-demo-service:latest", "Image for workloads")
 	alsoOutputTopology      = flag.Bool("gen-connectivity", true, "Generate connectivity layout in a DOT file.")
@@ -75,16 +76,18 @@ func main() {
 		}
 	}
 
-	var out io.WriteCloser
-	var err error
+	var outputs []io.Writer
 	if len(*outputDir) > 0 {
-		out, err = os.Create(filepath.Join(*outputDir, fmt.Sprintf("manifests-%s.yaml", app)))
-		if err != nil {
-			panic(err)
+		for i := 0; i < *distributedVersions; i++ {
+			out, err := os.Create(filepath.Join(*outputDir, fmt.Sprintf("manifests-%s-%d.yaml", app, i)))
+			if err != nil {
+				panic(err)
+			}
+			defer out.Close()
+			outputs = append(outputs, out)
 		}
-		defer out.Close()
 	} else {
-		out = os.Stdout
+		outputs = append(outputs, os.Stdout)
 	}
 
 	payloadZ := resource.MustParse(*payloadSize)
@@ -106,7 +109,7 @@ func main() {
 			NumConcurrentProc: *numTrafficGenProc,
 			QueryInterval:     *trafficGenQueryInterval,
 		},
-		Output:             out,
+		Outputs:            outputs,
 		Namespaces:         namespaces,
 		ReplicaNumberRange: [2]int{1, *maxReplicas},
 		Image:              *image,
