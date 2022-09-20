@@ -76,8 +76,9 @@ func main() {
 	}
 
 	var out io.WriteCloser
+	var err error
 	if len(*outputDir) > 0 {
-		out, err := os.Create(filepath.Join(*outputDir, fmt.Sprintf("manifests-%s.yaml", app)))
+		out, err = os.Create(filepath.Join(*outputDir, fmt.Sprintf("manifests-%s.yaml", app)))
 		if err != nil {
 			panic(err)
 		}
