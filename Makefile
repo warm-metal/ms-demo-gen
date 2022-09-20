@@ -1,4 +1,4 @@
-VERSION = "v0.1.5"
+VERSION = "v0.1.6"
 COMMIT = $(shell git rev-parse --short HEAD)
 
 default:

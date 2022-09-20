@@ -209,14 +209,19 @@ func GenForK8s(g graph.Directed, opts *Options) {
 		serviceMap[fromService.App] = append(serviceMap[fromService.App], from.ID())
 
 		targets := g.From(from.ID())
+		toServiceMap := make(map[string]struct{}, targets.Len())
 		for targets.Next() {
 			to := targets.Node()
-			toService := versionMap[to.ID()]
-			if toService == nil {
-				toService = opts.NewService(to)
-				versionMap[to.ID()] = toService
+			toVersion := versionMap[to.ID()]
+			if toVersion == nil {
+				toVersion = opts.NewService(to)
+				versionMap[to.ID()] = toVersion
 			}
-			fromService.Upstream = append(fromService.Upstream, fmt.Sprintf("%s.%s", toService.App, toService.Namespace))
+			toServiceMap[fmt.Sprintf("%s.%s", toVersion.App, toVersion.Namespace)] = struct{}{}
+		}
+
+		for upstream := range toServiceMap {
+			fromService.Upstream = append(fromService.Upstream, upstream)
 		}
 	}
 
