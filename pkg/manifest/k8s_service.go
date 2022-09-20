@@ -71,7 +71,9 @@ spec:
     app: "{{.App}}"
   ports:
     - protocol: TCP
+      appProtocol: http
       port: 80
       targetPort: 80
+      name: "http-80"
 ---
 `
