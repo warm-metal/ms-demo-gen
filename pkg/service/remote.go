@@ -71,7 +71,7 @@ type RemoteClient struct {
 	client     http.Client
 }
 
-func (c *RemoteClient) call(uploadReader *strings.Reader, respWriter io.Writer) (waitingList []chan io.Writer) {
+func (c *RemoteClient) call(headers map[string]string, uploadReader *strings.Reader, respWriter io.Writer) (waitingList []chan io.Writer) {
 	if len(c.upstream) == 0 {
 		return
 	}
@@ -84,9 +84,9 @@ func (c *RemoteClient) call(uploadReader *strings.Reader, respWriter io.Writer) 
 			w = &strings.Builder{}
 		}
 		if c.inParallel {
-			go c.asyncQuery(uploadReader, up, w, waitingList[i])
+			go c.asyncQuery(headers, uploadReader, up, w, waitingList[i])
 		} else {
-			c.syncQuery(uploadReader, up, w)
+			c.syncQuery(headers, uploadReader, up, w)
 			waitingList[i] <- w
 		}
 	}
@@ -94,21 +94,21 @@ func (c *RemoteClient) call(uploadReader *strings.Reader, respWriter io.Writer) 
 	return
 }
 
-func (c *RemoteClient) Discard(uploadReader *strings.Reader) {
+func (c *RemoteClient) Discard(headers map[string]string, uploadReader *strings.Reader) {
 	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	if err != nil {
 		panic(err)
 	}
 
 	defer devNull.Close()
-	waitingList := c.call(uploadReader, devNull)
+	waitingList := c.call(headers, uploadReader, devNull)
 	for _, w := range waitingList {
 		<-w
 	}
 }
 
-func (c *RemoteClient) Query(uploadReader *strings.Reader, maxPayloadSize int) (resp string) {
-	waitingList := c.call(uploadReader, nil)
+func (c *RemoteClient) Query(headers map[string]string, uploadReader *strings.Reader, maxPayloadSize int) (resp string) {
+	waitingList := c.call(headers, uploadReader, nil)
 	payloadSizePlan := make([]int, len(c.upstream))
 	resps := make([]string, len(c.upstream))
 	maxPayloadSizePerUpstream := maxPayloadSize / len(c.upstream)
@@ -146,16 +146,27 @@ func (c *RemoteClient) Query(uploadReader *strings.Reader, maxPayloadSize int) (
 	return b.String()
 }
 
-func (c *RemoteClient) syncQuery(uploadReader *strings.Reader, upstream string, respWriter io.Writer) {
+func (c *RemoteClient) syncQuery(headers map[string]string, uploadReader *strings.Reader, upstream string, respWriter io.Writer) {
 	url := "http://" + upstream
 	var err error
 	var resp *http.Response
+	var req *http.Request
 	if uploadReader != nil {
-		resp, err = c.client.Post(url, "text/plain", uploadReader)
+		req, err = http.NewRequest("POST", url, uploadReader)
 	} else {
-		resp, err = c.client.Get(url)
+		req, err = http.NewRequest("GET", url, nil)
 	}
 
+	if err != nil {
+		respWriter.Write([]byte(fmt.Sprintf("Error: %s", err)))
+		return
+	}
+
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
+	resp, err = c.client.Do(req)
 	if err != nil {
 		respWriter.Write([]byte(fmt.Sprintf("Error: %s", err)))
 		return
@@ -171,9 +182,9 @@ func (c *RemoteClient) syncQuery(uploadReader *strings.Reader, upstream string, 
 	io.Copy(respWriter, resp.Body)
 }
 
-func (c *RemoteClient) asyncQuery(uploadReader *strings.Reader, upstream string, respWriter io.Writer, out chan io.Writer) {
+func (c *RemoteClient) asyncQuery(headers map[string]string, uploadReader *strings.Reader, upstream string, respWriter io.Writer, out chan io.Writer) {
 	defer close(out)
-	c.syncQuery(uploadReader, upstream, respWriter)
+	c.syncQuery(headers, uploadReader, upstream, respWriter)
 	out <- respWriter
 }
 

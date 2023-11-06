@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"math/rand"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/warm-metal/ms-demo-gen.git/cmd/util"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/service"
@@ -16,7 +14,6 @@ import (
 
 func main() {
 	rands.Seed()
-	rand.Seed(time.Now().UnixNano())
 
 	s := service.CreateServer(&service.Options{
 		PayloadSize:     util.LookupEnv(util.ArgsKeyPayloadSize),
