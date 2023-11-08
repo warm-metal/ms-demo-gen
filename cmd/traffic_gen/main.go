@@ -36,9 +36,9 @@ func startQuery(ctx context.Context, c *service.RemoteClient, uploadReader *stri
 			}
 
 			if discardPayload {
-				c.Discard(uploadReader)
+				c.Discard(nil, uploadReader)
 			} else {
-				fmt.Println(c.Query(uploadReader, -1))
+				fmt.Println(c.Query(nil, uploadReader, -1))
 			}
 
 			if interval > 0 {

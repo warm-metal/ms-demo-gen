@@ -111,6 +111,6 @@ func BenchmarkRemoteQuery(b *testing.B) {
 	})
 
 	for i := 0; i < 100000; i++ {
-		cli.Query(nil, 512)
+		cli.Query(nil, nil, 512)
 	}
 }
