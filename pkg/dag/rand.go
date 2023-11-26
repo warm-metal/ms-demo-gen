@@ -4,6 +4,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"regexp"
 	"strings"
 
 	rands "github.com/xyproto/randomstring"
@@ -18,7 +19,8 @@ func (g randNameGen) Name() string {
 		return rands.HumanFriendlyEnglishString(10)
 	}
 
-	return g.words[rand.Int()%len(g.words)]
+	notLetter := regexp.MustCompile(`[^a-zA-Z]`)
+	return notLetter.ReplaceAllString(strings.ToLower(g.words[rand.Int()%len(g.words)]), "")
 }
 
 func readAvailableDictionary() ([]string, error) {
