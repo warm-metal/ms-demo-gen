@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,7 +46,6 @@ var (
 
 func main() {
 	rands.Seed()
-	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
 
 	if *showVersion {
@@ -71,7 +68,7 @@ func main() {
 			panic(err)
 		}
 
-		if err = ioutil.WriteFile(filepath.Join(*outputDir, fmt.Sprintf("connectivity-layout-%s.dot", app)), dotBin, 0755); err != nil {
+		if err = os.WriteFile(filepath.Join(*outputDir, fmt.Sprintf("connectivity-layout-%s.dot", app)), dotBin, 0755); err != nil {
 			panic(err)
 		}
 	}

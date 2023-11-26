@@ -7,8 +7,6 @@ import (
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/encoding"
 	"gonum.org/v1/gonum/graph/simple"
-
-	rands "github.com/xyproto/randomstring"
 )
 
 type Options struct {
@@ -48,11 +46,7 @@ func (s *Service) Attributes() []encoding.Attribute {
 	}
 }
 
-func createServices(id int64, numVersions int) (nextID int64, svcs []Service) {
-	name := "gateway"
-	if id != 1 {
-		name = rands.HumanFriendlyEnglishString(10)
-	}
+func createServices(id int64, name string, numVersions int) (nextID int64, svcs []Service) {
 	svcs = make([]Service, numVersions)
 	nextID = id
 	for i := 0; i < numVersions; i++ {
@@ -119,6 +113,7 @@ func New(opts *Options) graph.Directed {
 
 	vertices := make([]Service, 0, opts.NumberVertices*opts.NumberVersionsRange[1])
 	nextVertexID := int64(1)
+	gen := createNameGen()
 
 	for i := 1; i <= opts.NumberVertices; i++ {
 		var fromVertices []*Service
@@ -161,7 +156,14 @@ func New(opts *Options) graph.Directed {
 		}
 
 		var newVertices []Service
-		nextVertexID, newVertices = createServices(nextVertexID, versions)
+		var name string
+		if nextVertexID == 1 {
+			name = "gateway"
+		} else {
+			name = gen.Name()
+		}
+
+		nextVertexID, newVertices = createServices(nextVertexID, name, versions)
 		newVertexIndex := len(vertices)
 		vertices = append(vertices, newVertices...)
 

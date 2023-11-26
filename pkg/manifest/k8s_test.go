@@ -2,11 +2,9 @@ package manifest_test
 
 import (
 	"io"
-	"math/rand"
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/warm-metal/ms-demo-gen.git/pkg/dag"
 	"github.com/warm-metal/ms-demo-gen.git/pkg/manifest"
@@ -16,7 +14,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	rand.Seed(time.Now().UnixNano())
 	rands.Seed()
 	os.Exit(m.Run())
 }
